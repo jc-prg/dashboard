@@ -103,6 +103,7 @@ function buildItem(data, id) {
         port: mgmt.port ? Number(mgmt.port) : 22,
         user: mgmt.user,
         ssh_key: mgmt.ssh_key,
+        os: mgmt.os || 'linux',
       }
     }
   }

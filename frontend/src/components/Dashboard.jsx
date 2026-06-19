@@ -7,6 +7,7 @@ import FilterMenu from './FilterMenu'
 import HeaderMenu from './HeaderMenu'
 import ItemFormModal from './ItemFormModal'
 import AuditLogModal from './AuditLogModal'
+import ServerDetailsModal from './ServerDetailsModal'
 
 const CATEGORIES = ['all', 'project', 'server', 'tool']
 
@@ -14,6 +15,7 @@ export default function Dashboard({ token, onLogout, isDark, toggleDark }) {
   const [category, setCategory] = useState('all')
   const [filters, setFilters] = useState({ onlineOnly: false })
   const [modal, setModal] = useState(null) // null | { item: null } | { item: <item> }
+  const [detailsItem, setDetailsItem] = useState(null)
   const [showLog, setShowLog] = useState(false)
 
   function setFilter(key, value) { setFilters(f => ({ ...f, [key]: value })) }
@@ -92,6 +94,7 @@ export default function Dashboard({ token, onLogout, isDark, toggleDark }) {
                 onAction={triggerAction}
                 onEdit={openEdit}
                 onDelete={deleteItem}
+                onDetails={setDetailsItem}
               />
             ))}
           </div>
@@ -119,6 +122,10 @@ export default function Dashboard({ token, onLogout, isDark, toggleDark }) {
           onSave={handleSave}
           onClose={closeModal}
         />
+      )}
+
+      {detailsItem && (
+        <ServerDetailsModal item={detailsItem} token={token} onClose={() => setDetailsItem(null)} />
       )}
 
       {showLog && (

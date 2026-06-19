@@ -8,7 +8,7 @@ const HEADER_BG = {
   tool: 'bg-amber-100 dark:bg-amber-950',
 }
 
-export default function ItemCard({ item, onAction, onEdit, onDelete }) {
+export default function ItemCard({ item, onAction, onEdit, onDelete, onDetails }) {
   const headerBg = HEADER_BG[item.category] ?? 'bg-gray-100'
 
   return (
@@ -48,6 +48,15 @@ export default function ItemCard({ item, onAction, onEdit, onDelete }) {
             >
               Open →
             </a>
+          )}
+
+          {item.managementInfo?.type === 'ssh-server' && (
+            <button
+              onClick={() => onDetails(item)}
+              className="text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-0.5 text-gray-600 dark:text-gray-300 hover:border-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
+            >
+              Details
+            </button>
           )}
 
           {item.actions?.map((action) => (

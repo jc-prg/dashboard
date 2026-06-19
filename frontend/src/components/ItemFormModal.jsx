@@ -4,6 +4,7 @@ const SECRETS_PREFIX = '/app/config/secrets/'
 
 const CATEGORIES = ['project', 'server', 'tool']
 const MGMT_TYPES = ['none', 'ssh-server', 'ssh-compose']
+const OS_OPTIONS = ['linux', 'windows']
 
 function slugify(name) {
   return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
@@ -14,6 +15,7 @@ function emptyForm() {
     name: '', id: '', category: 'project', description: '',
     url: '', healthCheck: '', tags: '',
     mgmtType: 'none',
+    mgmtOs: 'linux',
     mgmtServerId: '',
     mgmtHost: '', mgmtPort: '22', mgmtUser: '', mgmtSshKey: '',
     mgmtComposeDir: '', mgmtComposeService: '',
@@ -31,6 +33,7 @@ function itemToForm(item) {
     healthCheck: item.healthCheck || '',
     tags: (item.tags || []).join(', '),
     mgmtType: m?.type || 'none',
+    mgmtOs: m?.os || 'linux',
     mgmtServerId: m?.serverId || '',
     mgmtHost: m?.host || '',
     mgmtPort: String(m?.port || 22),
@@ -69,6 +72,7 @@ function formToBody(form, isEdit) {
         port: parseInt(form.mgmtPort, 10) || 22,
         user: form.mgmtUser.trim(),
         ssh_key: SECRETS_PREFIX + form.mgmtSshKey.trim(),
+        os: form.mgmtOs || 'linux',
       }
     }
   }
@@ -336,6 +340,18 @@ export default function ItemFormModal({ item, servers = [], onSave, onClose }) {
                       <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                         File must exist in <code>config/secrets/</code> on the host.
                       </p>
+                    </Field>
+
+                    <Field label="Operating system">
+                      <select
+                        className={inputClass(false)}
+                        value={form.mgmtOs}
+                        onChange={e => set('mgmtOs', e.target.value)}
+                      >
+                        {OS_OPTIONS.map(os => (
+                          <option key={os} value={os}>{os.charAt(0).toUpperCase() + os.slice(1)}</option>
+                        ))}
+                      </select>
                     </Field>
                   </>
                 )}

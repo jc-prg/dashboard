@@ -5,6 +5,7 @@ const { loadConfig, MANAGEMENT_ACTIONS } = require('../config')
 const { getStatus } = require('../healthcheck')
 const { addItem, updateItem, deleteItem } = require('../configWriter')
 const { append } = require('../auditLog')
+const { fetchServerDetails } = require('../serverDetails')
 
 const SECRETS_PREFIX = '/app/config/secrets/'
 
@@ -27,6 +28,7 @@ function managementInfo(mgmt) {
     port: mgmt.port || 22,
     user: mgmt.user,
     sshKey: mgmt.ssh_key ? mgmt.ssh_key.replace(SECRETS_PREFIX, '') : '',
+    os: mgmt.os || 'linux',
   }
 }
 
@@ -79,6 +81,20 @@ router.get('/:id/status', (req, res) => {
     res.json(toResponse(item))
   } catch (err) {
     res.status(500).json({ error: `Config error: ${err.message}` })
+  }
+})
+
+router.get('/:id/details', async (req, res) => {
+  try {
+    const item = loadConfig().find(i => i.id === req.params.id)
+    if (!item) return res.status(404).json({ error: 'Item not found' })
+    if (item.management?.type !== 'ssh-server') {
+      return res.status(400).json({ error: 'Details are only available for ssh-server items' })
+    }
+    const details = await fetchServerDetails(item)
+    res.json(details)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
   }
 })
 
