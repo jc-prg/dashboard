@@ -18,7 +18,7 @@ function loadConfig() {
   const mapped = items.map((item, i) => {
     if (!item.id) throw new Error(`Item at index ${i} missing required field: id`)
     if (!item.name) throw new Error(`Item "${item.id}" missing required field: name`)
-    if (!item.url) throw new Error(`Item "${item.id}" missing required field: url`)
+    if (!item.url && item.management?.type !== 'ssh-server') throw new Error(`Item "${item.id}" missing required field: url`)
 
     const mgmt = item.management || null
     if (mgmt) {
@@ -41,7 +41,7 @@ function loadConfig() {
       name: item.name,
       category: item.category || 'project',
       description: item.description || '',
-      url: item.url,
+      url: item.url || null,
       health_check: item.health_check || null,
       tags: item.tags || [],
       management: mgmt,

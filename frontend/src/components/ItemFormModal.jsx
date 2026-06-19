@@ -27,7 +27,7 @@ function itemToForm(item) {
     id: item.id,
     category: item.category,
     description: item.description || '',
-    url: item.url,
+    url: item.url || '',
     healthCheck: item.healthCheck || '',
     tags: (item.tags || []).join(', '),
     mgmtType: m?.type || 'none',
@@ -45,8 +45,8 @@ function formToBody(form, isEdit) {
   const body = {
     name: form.name.trim(),
     category: form.category,
-    url: form.url.trim(),
   }
+  if (form.url.trim()) body.url = form.url.trim()
   if (!isEdit && form.id.trim()) body.id = form.id.trim()
   if (form.description.trim()) body.description = form.description.trim()
   if (form.healthCheck.trim()) body.health_check = form.healthCheck.trim()
@@ -79,7 +79,7 @@ function formToBody(form, isEdit) {
 function validateForm(form) {
   const errs = {}
   if (!form.name.trim()) errs.name = 'Required'
-  if (!form.url.trim()) errs.url = 'Required'
+  if (!form.url.trim() && form.mgmtType !== 'ssh-server') errs.url = 'Required'
   if (form.mgmtType !== 'none') {
     if (form.mgmtType === 'ssh-compose') {
       if (!form.mgmtServerId) errs.mgmtServerId = 'Required'
@@ -222,7 +222,7 @@ export default function ItemFormModal({ item, servers = [], onSave, onClose }) {
             </Field>
           </div>
 
-          <Field label="URL" required error={err('url')}>
+          <Field label="URL" required={form.mgmtType !== 'ssh-server'} error={err('url')}>
             <input
               className={inputClass(err('url'))}
               value={form.url}
@@ -231,14 +231,16 @@ export default function ItemFormModal({ item, servers = [], onSave, onClose }) {
             />
           </Field>
 
-          <Field label="Health check URL">
-            <input
-              className={inputClass(false)}
-              value={form.healthCheck}
-              onChange={e => set('healthCheck', e.target.value)}
-              placeholder="https://api.example.com/health  (defaults to URL)"
-            />
-          </Field>
+          {form.mgmtType !== 'ssh-server' && (
+            <Field label="Health check URL">
+              <input
+                className={inputClass(false)}
+                value={form.healthCheck}
+                onChange={e => set('healthCheck', e.target.value)}
+                placeholder="https://api.example.com/health  (defaults to URL)"
+              />
+            </Field>
+          )}
 
           <Field label="Description">
             <textarea

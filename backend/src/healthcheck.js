@@ -1,12 +1,35 @@
 'use strict'
 
+const net = require('net')
 const { loadConfig } = require('./config')
 
 // In-memory status cache: { [itemId]: { status, statusCode, latencyMs, checkedAt } }
 const statusCache = {}
 
+async function tcpPing(host, port, timeoutMs) {
+  const start = Date.now()
+  return new Promise((resolve) => {
+    const socket = new net.Socket()
+    const done = (status) => {
+      socket.destroy()
+      resolve({ status, statusCode: null, latencyMs: Date.now() - start, checkedAt: new Date().toISOString() })
+    }
+    socket.setTimeout(timeoutMs)
+    socket.on('connect', () => done('online'))
+    socket.on('timeout', () => done('offline'))
+    socket.on('error', () => done('offline'))
+    socket.connect(port, host)
+  })
+}
+
 async function checkItem(item, timeoutMs) {
   const url = item.health_check || item.url
+  if (!url) {
+    if (item.management?.type === 'ssh-server') {
+      return tcpPing(item.management.host, item.management.port || 22, timeoutMs)
+    }
+    return { status: 'unknown', statusCode: null, latencyMs: null, checkedAt: new Date().toISOString() }
+  }
   const start = Date.now()
   try {
     const controller = new AbortController()

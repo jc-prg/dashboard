@@ -39,7 +39,7 @@ function validate(data) {
   const errors = {}
 
   if (!data.name || !String(data.name).trim()) errors.name = 'required'
-  if (!data.url || !String(data.url).trim()) errors.url = 'required'
+  if (data.management?.type !== 'ssh-server' && (!data.url || !String(data.url).trim())) errors.url = 'required'
 
   if (data.category && !ALLOWED_CATEGORIES.includes(data.category)) {
     errors.category = `must be one of: ${ALLOWED_CATEGORIES.join(', ')}`
@@ -76,8 +76,8 @@ function buildItem(data, id) {
     id,
     name: data.name.trim(),
     category: data.category || 'project',
-    url: data.url.trim(),
   }
+  if (data.url?.trim()) item.url = data.url.trim()
 
   if (data.description?.trim()) item.description = data.description.trim()
   if (data.health_check?.trim()) item.health_check = data.health_check.trim()
