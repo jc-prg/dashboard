@@ -73,8 +73,9 @@ export default function ServerDetailsModal({ item, token, onClose }) {
           )}
           {data && (
             <div>
-              <Row label="Total storage" value={data.totalStorage} />
-              <Row label="Available storage" value={data.availStorage} />
+              {data.storageList?.map(({ mount, value }) => (
+                <Row key={mount} label={`Storage usage ${mount}`} value={value} />
+              ))}
               <Row label="CPU usage" value={data.cpuUsage} />
               <Row
                 label="Memory usage"
