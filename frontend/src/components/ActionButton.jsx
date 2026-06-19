@@ -32,15 +32,15 @@ export default function ActionButton({ item, action, onAction }) {
       <button
         onClick={() => setConfirming(true)}
         disabled={loading}
-        className="capitalize text-xs border border-gray-300 rounded px-2 py-0.5 text-gray-600 hover:border-gray-500 hover:text-gray-900 disabled:opacity-40 transition-colors"
+        className="capitalize text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-0.5 text-gray-600 dark:text-gray-300 hover:border-gray-500 hover:text-gray-900 dark:hover:text-white disabled:opacity-40 transition-colors"
       >
         {loading ? '…' : action}
       </button>
 
       {/* Confirmation popover */}
       {confirming && (
-        <div className="absolute bottom-full left-0 mb-2 z-20 bg-white border border-gray-200 rounded-lg shadow-lg p-3 w-44">
-          <p className="text-xs text-gray-700 mb-2 leading-snug">
+        <div className="absolute bottom-full left-0 mb-2 z-20 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 w-44">
+          <p className="text-xs text-gray-700 dark:text-gray-300 mb-2 leading-snug">
             {action} <strong>{item.name}</strong>?
           </p>
           <div className="flex gap-2">
@@ -52,7 +52,7 @@ export default function ActionButton({ item, action, onAction }) {
             </button>
             <button
               onClick={() => setConfirming(false)}
-              className="text-xs border border-gray-300 rounded px-2 py-1 hover:bg-gray-50"
+              className="text-xs border border-gray-300 dark:border-gray-600 dark:text-gray-300 rounded px-2 py-1 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               Cancel
             </button>

@@ -98,7 +98,7 @@ function validateForm(form) {
 function Field({ label, error, required, children }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-700 mb-1">
+      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
         {label}{required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
       {children}
@@ -108,8 +108,8 @@ function Field({ label, error, required, children }) {
 }
 
 const inputClass = (hasError) =>
-  `w-full border rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-    hasError ? 'border-red-400' : 'border-gray-300'
+  `w-full border rounded px-2.5 py-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+    hasError ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'
   }`
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -167,11 +167,11 @@ export default function ItemFormModal({ item, servers = [], onSave, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-          <h2 className="font-semibold text-gray-900">{isEdit ? 'Edit item' : 'Add item'}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg leading-none">✕</button>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="font-semibold text-gray-900 dark:text-white">{isEdit ? 'Edit item' : 'Add item'}</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-lg leading-none">✕</button>
         </div>
 
         {/* Scrollable body */}
@@ -193,7 +193,7 @@ export default function ItemFormModal({ item, servers = [], onSave, onClose }) {
             </Field>
             <Field label="ID" error={err('id')}>
               <input
-                className={`${inputClass(err('id'))} ${isEdit ? 'bg-gray-50 text-gray-500' : ''}`}
+                className={`${inputClass(err('id'))} ${isEdit ? 'bg-gray-50 dark:bg-gray-600 text-gray-500' : ''}`}
                 value={form.id}
                 readOnly={isEdit}
                 onChange={e => { setIdTouched(true); set('id', e.target.value) }}
@@ -253,14 +253,14 @@ export default function ItemFormModal({ item, servers = [], onSave, onClose }) {
           </Field>
 
           {/* Remote management section */}
-          <div className="border border-gray-200 rounded-lg p-3 flex flex-col gap-3">
+          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 flex flex-col gap-3">
             <div>
-              <p className="text-xs font-medium text-gray-700 mb-2">Remote management</p>
+              <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Remote management</p>
               <div className="flex gap-3">
                 {MGMT_TYPES.map(t => {
                   const disabled = t === 'ssh-compose' && sshServers.length === 0
                   return (
-                    <label key={t} className={`flex items-center gap-1.5 text-xs cursor-pointer ${disabled ? 'text-gray-400' : 'text-gray-700'}`}>
+                    <label key={t} className={`flex items-center gap-1.5 text-xs cursor-pointer ${disabled ? 'text-gray-400 dark:text-gray-600' : 'text-gray-700 dark:text-gray-300'}`}>
                       <input
                         type="radio"
                         name="mgmtType"
@@ -325,7 +325,7 @@ export default function ItemFormModal({ item, servers = [], onSave, onClose }) {
 
                     <Field label="SSH key filename" required error={err('mgmtSshKey') || serverErrors['management.ssh_key']}>
                       <div className="flex items-center gap-1">
-                        <span className="text-xs text-gray-400 whitespace-nowrap">secrets/</span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">secrets/</span>
                         <input
                           className={inputClass(err('mgmtSshKey') || serverErrors['management.ssh_key'])}
                           value={form.mgmtSshKey}
@@ -333,7 +333,7 @@ export default function ItemFormModal({ item, servers = [], onSave, onClose }) {
                           placeholder="rpi_home_key"
                         />
                       </div>
-                      <p className="text-xs text-gray-400 mt-0.5">
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                         File must exist in <code>config/secrets/</code> on the host.
                       </p>
                     </Field>
@@ -366,11 +366,11 @@ export default function ItemFormModal({ item, servers = [], onSave, onClose }) {
         </form>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-200">
+        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-200 dark:border-gray-700">
           <button
             type="button"
             onClick={onClose}
-            className="text-sm border border-gray-300 rounded px-4 py-1.5 hover:bg-gray-50 transition-colors"
+            className="text-sm border border-gray-300 dark:border-gray-600 dark:text-gray-300 rounded px-4 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
             Cancel
           </button>

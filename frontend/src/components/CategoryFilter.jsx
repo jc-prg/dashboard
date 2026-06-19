@@ -1,8 +1,8 @@
 const STYLES = {
-  all:     { active: 'bg-gray-900 text-white',   inactive: 'text-gray-600 hover:bg-gray-100' },
-  project: { active: 'bg-blue-600 text-white',   inactive: 'text-blue-600 hover:bg-blue-50' },
-  server:  { active: 'bg-purple-600 text-white', inactive: 'text-purple-600 hover:bg-purple-50' },
-  tool:    { active: 'bg-amber-500 text-white',  inactive: 'text-amber-600 hover:bg-amber-50' },
+  all:     { active: 'bg-gray-900 dark:bg-gray-100 dark:text-gray-900 text-white',   inactive: 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' },
+  project: { active: 'bg-blue-600 text-white',   inactive: 'text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950' },
+  server:  { active: 'bg-purple-600 text-white', inactive: 'text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950' },
+  tool:    { active: 'bg-amber-500 text-white',  inactive: 'text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950' },
 }
 
 export default function CategoryFilter({ categories, active, onChange }) {

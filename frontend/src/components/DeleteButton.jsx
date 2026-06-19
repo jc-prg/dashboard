@@ -28,11 +28,11 @@ export default function DeleteButton({ item, onDelete }) {
       </button>
 
       {confirming && (
-        <div className="absolute bottom-full right-0 mb-2 z-20 bg-white border border-gray-200 rounded-lg shadow-lg p-3 w-52">
-          <p className="text-xs text-gray-700 mb-1 leading-snug">
+        <div className="absolute bottom-full right-0 mb-2 z-20 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 w-52">
+          <p className="text-xs text-gray-700 dark:text-gray-300 mb-1 leading-snug">
             Delete <strong>{item.name}</strong>?
           </p>
-          <p className="text-xs text-gray-400 mb-2">This removes it from items.yml.</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">This removes it from items.yml.</p>
           {error && <p className="text-xs text-red-600 mb-2">{error}</p>}
           <div className="flex gap-2">
             <button
@@ -43,7 +43,7 @@ export default function DeleteButton({ item, onDelete }) {
             </button>
             <button
               onClick={() => setConfirming(false)}
-              className="text-xs border border-gray-300 rounded px-2 py-1 hover:bg-gray-50"
+              className="text-xs border border-gray-300 dark:border-gray-600 dark:text-gray-300 rounded px-2 py-1 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               Cancel
             </button>
