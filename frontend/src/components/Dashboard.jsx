@@ -15,7 +15,8 @@ export default function Dashboard({ token, onLogout }) {
     triggerAction, createItem, updateItem, deleteItem,
   } = useItems(token, onLogout)
 
-  const filtered = category === 'all' ? items : items.filter((i) => i.category === category)
+  const filtered = (category === 'all' ? items : items.filter((i) => i.category === category))
+    .slice().sort((a, b) => a.name.localeCompare(b.name))
 
   function openAdd() { setModal({ item: null }) }
   function openEdit(item) { setModal({ item }) }
