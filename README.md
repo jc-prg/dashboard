@@ -99,10 +99,10 @@ pi ALL=(ALL) NOPASSWD: /sbin/reboot
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
+┌───────────────────────────────────────────────────────-──┐
 │                   Docker Compose Stack                   │
-│                                                         │
-│  ┌──────────────┐  REST +   ┌────────────────────────┐  │
+│                                                          │
+│  ┌──────────────┐  REST +   ┌────────────────────-────┐  │
 │  │   Frontend   │◄─Basic───►│      Backend API        │  │
 │  │ (React/Vite) │   Auth    │    (Node/Express)       │  │
 │  └──────────────┘           └──────────┬──────────────┘  │
@@ -112,10 +112,10 @@ pi ALL=(ALL) NOPASSWD: /sbin/reboot
 │                             executes SSH commands ───────┼──► servers
 │                                        │                 │
 │                              ┌─────────▼──────────┐      │
-│                              │  config/items.yml   │      │
-│                              │  config/secrets/    │      │
-│                              └─────────────────────┘      │
-└─────────────────────────────────────────────────────────┘
+│                              │  config/items.yml  │      │
+│                              │  config/secrets/   │      │
+│                              └────────────────────┘      │
+└────────────────────────────────────────────────────-─────┘
 ```
 
 - **Frontend** — React + Vite + Tailwind CSS, served by Nginx
