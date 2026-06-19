@@ -32,7 +32,7 @@ export default function LoginForm({ onLogin }) {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 w-full max-w-sm">
         <h1 className="text-xl font-semibold text-gray-900 mb-6 text-center">
-          Developer Dashboard
+          jc://dashboard/
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-4">

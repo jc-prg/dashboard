@@ -32,7 +32,7 @@ export default function Dashboard({ token, onLogout }) {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-gray-900">Developer Dashboard</h1>
+        <h1 className="text-xl font-semibold text-gray-900">jc://dashboard/</h1>
         <div className="flex items-center gap-3">
           <button
             onClick={refresh}
