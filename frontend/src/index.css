@@ -7,7 +7,7 @@
 @supports (padding-top: env(safe-area-inset-top)) {
   /* Extend the sticky header background up into the status bar */
   header {
-    padding-top: max(env(safe-area-inset-top), 1rem);
+    padding-top: max(env(safe-area-inset-top), 1rem) !important;
   }
 
   /* Keep content away from notch/home-indicator edges */
