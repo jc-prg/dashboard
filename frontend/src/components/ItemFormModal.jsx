@@ -166,16 +166,16 @@ export default function ItemFormModal({ item, servers = [], onSave, onClose }) {
   const err = (key) => errors[key] || serverErrors[key] || serverErrors[`management.${key.replace('mgmt', '').toLowerCase()}`]
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="font-semibold text-gray-900 dark:text-white">{isEdit ? 'Edit item' : 'Add item'}</h2>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-white">{isEdit ? 'Edit item' : 'Add item'}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-lg leading-none">✕</button>
         </div>
 
         {/* Scrollable body */}
-        <form onSubmit={handleSubmit} className="overflow-y-auto px-5 py-4 flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="overflow-y-auto px-4 py-4 flex flex-col gap-4">
 
           {serverErrors._general && (
             <p className="text-sm text-red-600 bg-red-50 rounded px-3 py-2">{serverErrors._general}</p>
@@ -366,7 +366,7 @@ export default function ItemFormModal({ item, servers = [], onSave, onClose }) {
         </form>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-gray-200 dark:border-gray-700">
           <button
             type="button"
             onClick={onClose}

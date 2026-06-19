@@ -37,25 +37,38 @@ export default function ActionButton({ item, action, onAction }) {
         {loading ? '…' : action}
       </button>
 
-      {/* Confirmation popover */}
+      {/* Confirmation modal */}
       {confirming && (
-        <div className="absolute bottom-full left-0 mb-2 z-20 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 w-44">
-          <p className="text-xs text-gray-700 dark:text-gray-300 mb-2 leading-snug">
-            {action} <strong>{item.name}</strong>?
-          </p>
-          <div className="flex gap-2">
-            <button
-              onClick={handleConfirm}
-              className="text-xs bg-red-600 text-white rounded px-2 py-1 hover:bg-red-700"
-            >
-              Confirm
-            </button>
-            <button
-              onClick={() => setConfirming(false)}
-              className="text-xs border border-gray-300 dark:border-gray-600 dark:text-gray-300 rounded px-2 py-1 hover:bg-gray-50 dark:hover:bg-gray-700"
-            >
-              Cancel
-            </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-sm flex flex-col">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-base font-semibold text-gray-900 dark:text-white capitalize">{action}</h2>
+              <button
+                onClick={() => setConfirming(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-lg leading-none"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="px-4 py-4">
+              <p className="text-sm text-gray-700 dark:text-gray-300">
+                {action} <strong className="text-gray-900 dark:text-white">{item.name}</strong>?
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => setConfirming(false)}
+                className="text-sm border border-gray-300 dark:border-gray-600 dark:text-gray-300 rounded px-4 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirm}
+                className="text-sm bg-red-600 text-white rounded px-4 py-1.5 hover:bg-red-700 transition-colors"
+              >
+                Confirm
+              </button>
+            </div>
           </div>
         </div>
       )}
