@@ -1,0 +1,39 @@
+items:
+  # Plain item — no remote actions
+  - id: my-tool
+    name: My Tool
+    category: tool
+    url: https://tool.example.com
+    description: A useful tool
+    tags:
+      - example
+
+  # Server item — enables "Reboot" action via SSH
+  - id: my-server
+    name: My Server
+    category: server
+    url: https://server.example.com
+    description: Main server
+    tags:
+      - linux
+    management:
+      type: ssh-server
+      host: server.example.com
+      port: 22
+      user: pi
+      ssh_key: /app/config/secrets/my_server_key
+
+  # Docker Compose service — enables "Restart" action via SSH
+  - id: my-api
+    name: My API
+    category: project
+    url: https://api.example.com
+    health_check: https://api.example.com/health
+    description: REST API running in Docker
+    tags:
+      - docker
+    management:
+      type: ssh-compose
+      server_id: my-server       # references the ssh-server item above
+      compose_dir: /home/pi/apps/my-api
+      compose_service: api       # optional — omit to restart all services

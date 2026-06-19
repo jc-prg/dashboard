@@ -3,6 +3,9 @@
 config/secrets/*
 !config/secrets/.gitkeep
 
+# User config — copy items.yml.sample to items.yml to get started
+config/items.yml
+
 # Dependencies
 node_modules/
 backend/node_modules/
