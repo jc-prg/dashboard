@@ -17,6 +17,8 @@ A personal developer dashboard for tracking projects, servers, and tools — wit
 ```bash
 cp .env.example .env
 # edit .env: set DASHBOARD_USER and DASHBOARD_PASSWORD
+cp config/items.yml.sample config/items.yml
+# edit config/items.yml to add your items
 docker compose up -d
 ```
 
@@ -24,7 +26,7 @@ Frontend is available on port 80 (configurable via `FRONTEND_PORT` in `.env`).
 
 ## Configuration
 
-All items are defined in `config/items.yml`. Changes made through the UI are written back to this file automatically.
+All items are defined in `config/items.yml`. This file is not committed to version control — copy `config/items.yml.sample` to get started. Changes made through the UI are written back to this file automatically.
 
 ### Example `items.yml`
 
