@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 
 const POLL_INTERVAL_MS = 30_000
 
-export function useItems(token, onUnauthorized) {
+export function useItems(token, onUnauthorized, isOnline = true) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -10,6 +10,7 @@ export function useItems(token, onUnauthorized) {
   const authHeader = { Authorization: `Basic ${token}` }
 
   const fetchItems = useCallback(async () => {
+    if (!isOnline) return
     try {
       const res = await fetch('/api/items', { headers: authHeader })
       if (res.status === 401) { onUnauthorized?.(); return }
@@ -21,13 +22,14 @@ export function useItems(token, onUnauthorized) {
     } finally {
       setLoading(false)
     }
-  }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [token, isOnline]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    if (!isOnline) { setError(null); return }
     fetchItems()
     const id = setInterval(fetchItems, POLL_INTERVAL_MS)
     return () => clearInterval(id)
-  }, [fetchItems])
+  }, [fetchItems, isOnline])
 
   // ─── Remote actions (SSH) ────────────────────────────────────────────────
 

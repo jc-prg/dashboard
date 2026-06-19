@@ -23,7 +23,7 @@ export default function Dashboard({ token, onLogout, isDark, toggleDark }) {
   const {
     items, loading, error, refresh,
     triggerAction, createItem, updateItem, deleteItem,
-  } = useItems(token, onLogout)
+  } = useItems(token, onLogout, isOnline)
 
   const filtered = (category === 'all' ? items : items.filter((i) => i.category === category))
     .filter((i) => !filters.onlineOnly || i.status === 'online')
