@@ -1,0 +1,27 @@
+items:
+  - id: jc-remote
+    name: jc://remote/
+    category: project
+    url: http://192.168.1.41:81/
+    description: remote control app
+    health_check: http://192.168.1.41:81/
+    tags:
+      - local
+      - prod
+    management:
+      type: ssh-compose
+      server_id: jc-server
+      compose_dir: /project/prod/remote
+  - id: jc-server
+    name: jc://server/
+    category: server
+    url: 192.168.1.41
+    description: Main internal server
+    tags:
+      - local
+    management:
+      type: ssh-server
+      host: 192.168.1.41
+      port: 22
+      user: pi
+      ssh_key: /app/config/secrets/rpi_home_key

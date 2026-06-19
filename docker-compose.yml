@@ -1,0 +1,32 @@
+version: "3.9"
+
+services:
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    volumes:
+      - ./config/items.yml:/app/config/items.yml
+      - ./config/secrets:/app/config/secrets:ro
+    environment:
+      - PORT=3001
+      - CHECK_INTERVAL_SECONDS=60
+      - REQUEST_TIMEOUT_MS=5000
+      - SSH_CONNECT_TIMEOUT_MS=8000
+      - DASHBOARD_USER=${DASHBOARD_USER}
+      - DASHBOARD_PASSWORD=${DASHBOARD_PASSWORD}
+    networks:
+      - dashboard
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - dashboard
+
+networks:
+  dashboard:
+    name: dashboard_net
