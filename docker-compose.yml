@@ -7,13 +7,18 @@ services:
     volumes:
       - ./config/items.yml:/app/config/items.yml
       - ./config/secrets:/app/config/secrets:ro
+      - ./.env:/app/.env
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - PORT=3001
       - CHECK_INTERVAL_SECONDS=60
       - REQUEST_TIMEOUT_MS=5000
-      - SSH_CONNECT_TIMEOUT_MS=8000
+      - SSH_CONNECT_TIMEOUT_MS=15000
+      - LOCAL_HOST_IPS=${LOCAL_HOST_IPS:-}
       - DASHBOARD_USER=${DASHBOARD_USER}
       - DASHBOARD_PASSWORD=${DASHBOARD_PASSWORD}
+      - RESET_PWD=${RESET_PWD:-0}
+      - ENV_FILE=/app/.env
     networks:
       - dashboard
 

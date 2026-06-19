@@ -4,14 +4,13 @@ items:
     category: project
     url: http://192.168.1.41:81/
     description: remote control app
-    health_check: http://192.168.1.41:81/
     tags:
       - local
       - prod
     management:
       type: ssh-compose
       server_id: jc-server
-      compose_dir: /project/prod/remote
+      compose_dir: /projects/prod/remote
   - id: jc-server
     name: jc://server/
     category: server
@@ -28,6 +27,6 @@ items:
     name: FritzBox
     category: tool
     url: http://192.168.1.1
-    description: Local FritzBox administration
+    description: Local router administration
     tags:
       - local

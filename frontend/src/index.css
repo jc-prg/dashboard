@@ -1,3 +1,19 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Safe area insets for iOS PWA (black-translucent status bar + viewport-fit=cover).
+   Placed outside @layer so these rules beat Tailwind utility classes. */
+@supports (padding-top: env(safe-area-inset-top)) {
+  /* Extend the sticky header background up into the status bar */
+  header {
+    padding-top: max(env(safe-area-inset-top), 1rem);
+  }
+
+  /* Keep content away from notch/home-indicator edges */
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

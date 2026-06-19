@@ -1,12 +1,16 @@
 'use strict'
 
 const express = require('express')
+const { maybeResetPassword } = require('./resetPassword')
 const { authMiddleware } = require('./middleware/auth')
 const { startHealthCheckScheduler } = require('./healthcheck')
 const { loadConfig } = require('./config')
 const authRouter = require('./routes/auth')
 const itemsRouter = require('./routes/items')
 const actionsRouter = require('./routes/actions')
+const { getLog } = require('./auditLog')
+
+maybeResetPassword()
 
 const PORT = parseInt(process.env.PORT || '3001', 10)
 const CHECK_INTERVAL_SECONDS = parseInt(process.env.CHECK_INTERVAL_SECONDS || '60', 10)
@@ -36,6 +40,10 @@ app.use(auth)
 app.use('/api/auth', authRouter)
 app.use('/api/items', itemsRouter)
 app.use('/api/items', actionsRouter)
+
+app.get('/api/audit-log', (req, res) => {
+  res.json(getLog())
+})
 
 app.get('/api/config', (req, res) => {
   try {

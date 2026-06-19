@@ -5,6 +5,7 @@ import CategoryFilter from './CategoryFilter'
 import FilterMenu from './FilterMenu'
 import HeaderMenu from './HeaderMenu'
 import ItemFormModal from './ItemFormModal'
+import AuditLogModal from './AuditLogModal'
 
 const CATEGORIES = ['all', 'project', 'server', 'tool']
 
@@ -12,6 +13,7 @@ export default function Dashboard({ token, onLogout, isDark, toggleDark }) {
   const [category, setCategory] = useState('all')
   const [filters, setFilters] = useState({ onlineOnly: false })
   const [modal, setModal] = useState(null) // null | { item: null } | { item: <item> }
+  const [showLog, setShowLog] = useState(false)
 
   function setFilter(key, value) { setFilters(f => ({ ...f, [key]: value })) }
 
@@ -55,7 +57,7 @@ export default function Dashboard({ token, onLogout, isDark, toggleDark }) {
           >
             ↻
           </button>
-          <HeaderMenu onAddItem={openAdd} onLogout={onLogout} />
+          <HeaderMenu onAddItem={openAdd} onShowLog={() => setShowLog(true)} onLogout={onLogout} />
         </div>
       </header>
 
@@ -108,6 +110,10 @@ export default function Dashboard({ token, onLogout, isDark, toggleDark }) {
           onSave={handleSave}
           onClose={closeModal}
         />
+      )}
+
+      {showLog && (
+        <AuditLogModal token={token} onClose={() => setShowLog(false)} />
       )}
     </div>
   )

@@ -4,6 +4,7 @@ const { Router } = require('express')
 const { loadConfig, MANAGEMENT_ACTIONS } = require('../config')
 const { getStatus } = require('../healthcheck')
 const { addItem, updateItem, deleteItem } = require('../configWriter')
+const { append } = require('../auditLog')
 
 const SECRETS_PREFIX = '/app/config/secrets/'
 
@@ -85,25 +86,35 @@ router.get('/:id/status', (req, res) => {
 
 router.post('/', (req, res) => {
   try {
-    res.status(201).json(enrichRaw(addItem(req.body)))
+    const item = enrichRaw(addItem(req.body))
+    append({ type: 'create', itemId: item.id, itemName: item.name, success: true })
+    res.status(201).json(item)
   } catch (err) {
+    append({ type: 'create', itemId: null, itemName: req.body.name || '?', success: false, error: err.message })
     handleWriteError(err, res)
   }
 })
 
 router.put('/:id', (req, res) => {
   try {
-    res.json(enrichRaw(updateItem(req.params.id, req.body)))
+    const item = enrichRaw(updateItem(req.params.id, req.body))
+    append({ type: 'update', itemId: item.id, itemName: item.name, success: true })
+    res.json(item)
   } catch (err) {
+    append({ type: 'update', itemId: req.params.id, itemName: req.body.name || '?', success: false, error: err.message })
     handleWriteError(err, res)
   }
 })
 
 router.delete('/:id', (req, res) => {
   try {
+    // Load name before deleting
+    const existing = loadConfig().find(i => i.id === req.params.id)
     deleteItem(req.params.id)
+    append({ type: 'delete', itemId: req.params.id, itemName: existing ? existing.name : req.params.id, success: true })
     res.json({ ok: true })
   } catch (err) {
+    append({ type: 'delete', itemId: req.params.id, itemName: req.params.id, success: false, error: err.message })
     handleWriteError(err, res)
   }
 })

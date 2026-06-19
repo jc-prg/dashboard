@@ -1,6 +1,8 @@
 'use strict'
 
+const path = require('path')
 const { runSshCommand } = require('./ssh')
+const { isLocalHost, runLocalCommand } = require('./localExec')
 
 const SSH_CONNECT_TIMEOUT_MS = parseInt(process.env.SSH_CONNECT_TIMEOUT_MS || '8000', 10)
 
@@ -15,6 +17,22 @@ function buildCommand(mgmt, action) {
   }
   if (mgmt.type === 'ssh-compose' && action === 'restart') {
     const base = `cd ${mgmt.compose_dir} && docker compose restart`
+    return mgmt.compose_service ? `${base} ${mgmt.compose_service}` : base
+  }
+  throw new Error(`No command mapping for type="${mgmt.type}" action="${action}"`)
+}
+
+/**
+ * Build a command that can run locally (without SSH).
+ * For ssh-compose: uses `docker compose -p <project>` so no compose file path is needed.
+ */
+function buildLocalCommand(mgmt, action) {
+  if (mgmt.type === 'ssh-server' && action === 'reboot') {
+    return 'sudo reboot'
+  }
+  if (mgmt.type === 'ssh-compose' && action === 'restart') {
+    const project = path.basename(mgmt.compose_dir)
+    const base = `docker compose -p ${project} restart`
     return mgmt.compose_service ? `${base} ${mgmt.compose_service}` : base
   }
   throw new Error(`No command mapping for type="${mgmt.type}" action="${action}"`)
@@ -62,7 +80,14 @@ async function executeAction(item, action, allItems) {
     }
   }
 
-  const result = await runSshCommand({ ...sshCreds, command, timeoutMs: SSH_CONNECT_TIMEOUT_MS })
+  let result
+  if (isLocalHost(sshCreds.host)) {
+    const localCmd = buildLocalCommand(mgmt, action)
+    result = await runLocalCommand(localCmd)
+  } else {
+    const command = buildCommand(mgmt, action)
+    result = await runSshCommand({ ...sshCreds, command, timeoutMs: SSH_CONNECT_TIMEOUT_MS })
+  }
 
   return {
     success: result.code === 0,
