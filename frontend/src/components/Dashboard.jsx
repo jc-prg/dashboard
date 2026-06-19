@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useItems } from '../hooks/useItems'
+import { useConnectionStatus } from '../hooks/useConnectionStatus'
 import ItemCard from './ItemCard'
 import CategoryFilter from './CategoryFilter'
 import FilterMenu from './FilterMenu'
@@ -16,6 +17,8 @@ export default function Dashboard({ token, onLogout, isDark, toggleDark }) {
   const [showLog, setShowLog] = useState(false)
 
   function setFilter(key, value) { setFilters(f => ({ ...f, [key]: value })) }
+
+  const isOnline = useConnectionStatus(token)
 
   const {
     items, loading, error, refresh,
@@ -40,6 +43,12 @@ export default function Dashboard({ token, onLogout, isDark, toggleDark }) {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {!isOnline && (
+        <div className="fixed inset-x-0 top-0 z-50 flex items-center justify-center gap-2 bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-md">
+          <span className="inline-block h-2 w-2 rounded-full bg-white opacity-80 animate-pulse" />
+          Backend unreachable — retrying…
+        </div>
+      )}
       <header className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
         <h1 className="text-xl font-semibold text-gray-900 dark:text-white">jc://dashboard/</h1>
         <div className="flex items-center gap-2">
