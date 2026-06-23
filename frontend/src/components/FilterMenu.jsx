@@ -8,11 +8,17 @@ function FilterIcon() {
   )
 }
 
-export default function FilterMenu({ filters, onChange }) {
+export default function FilterMenu({ filters, onChange, availableTags = [] }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
-  const activeCount = Object.values(filters).filter(Boolean).length
+  const activeCount = (filters.onlineOnly ? 1 : 0) + (filters.tags?.length ?? 0)
+
+  function toggleTag(tag) {
+    const current = filters.tags ?? []
+    const next = current.includes(tag) ? current.filter(t => t !== tag) : [...current, tag]
+    onChange('tags', next)
+  }
 
   useEffect(() => {
     if (!open) return
@@ -51,6 +57,23 @@ export default function FilterMenu({ filters, onChange }) {
             />
             Online only
           </label>
+          {availableTags.length > 0 && (
+            <>
+              <div className="border-t border-gray-100 dark:border-gray-700 mx-3 my-1" />
+              <p className="px-3 py-1 text-xs text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wide">Tags</p>
+              {availableTags.map(tag => (
+                <label key={tag} className="flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+                  <input
+                    type="checkbox"
+                    checked={filters.tags?.includes(tag) ?? false}
+                    onChange={() => toggleTag(tag)}
+                    className="accent-blue-600"
+                  />
+                  {tag}
+                </label>
+              ))}
+            </>
+          )}
         </div>
       )}
     </div>

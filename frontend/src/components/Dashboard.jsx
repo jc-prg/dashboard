@@ -14,7 +14,7 @@ const CATEGORIES = ['all', 'project', 'server', 'tool']
 
 export default function Dashboard({ token, onLogout, isDark, toggleDark }) {
   const [category, setCategory] = useState('all')
-  const [filters, setFilters] = useState({ onlineOnly: false })
+  const [filters, setFilters] = useState({ onlineOnly: false, tags: [] })
   const [modal, setModal] = useState(null) // null | { item: null } | { item: <item> }
   const [detailsItem, setDetailsItem] = useState(null)
   const [itemDetailsItem, setItemDetailsItem] = useState(null)
@@ -29,8 +29,11 @@ export default function Dashboard({ token, onLogout, isDark, toggleDark }) {
     triggerAction, createItem, updateItem, deleteItem,
   } = useItems(token, onLogout, isOnline)
 
+  const availableTags = [...new Set(items.flatMap(i => i.tags ?? []))].sort()
+
   const filtered = (category === 'all' ? items : items.filter((i) => i.category === category))
     .filter((i) => !filters.onlineOnly || i.status === 'online')
+    .filter((i) => filters.tags.length === 0 || filters.tags.some(t => i.tags?.includes(t)))
     .slice().sort((a, b) => a.name.localeCompare(b.name))
 
   function openAdd() { setModal({ item: null }) }
@@ -77,7 +80,7 @@ export default function Dashboard({ token, onLogout, isDark, toggleDark }) {
       <main className="px-6 py-6 max-w-7xl mx-auto">
         <div className="flex items-center gap-3 flex-wrap">
           <CategoryFilter categories={CATEGORIES} active={category} onChange={setCategory} />
-          <FilterMenu filters={filters} onChange={setFilter} />
+          <FilterMenu filters={filters} onChange={setFilter} availableTags={availableTags} />
         </div>
 
         {loading && (
