@@ -33,7 +33,7 @@ export default function Dashboard({ token, onLogout, isDark, toggleDark }) {
 
   const filtered = (category === 'all' ? items : items.filter((i) => i.category === category))
     .filter((i) => !filters.onlineOnly || i.status === 'online')
-    .filter((i) => filters.tags.length === 0 || filters.tags.some(t => i.tags?.includes(t)))
+    .filter((i) => filters.tags.length === 0 || filters.tags.every(t => i.tags?.includes(t)))
     .slice().sort((a, b) => a.name.localeCompare(b.name))
 
   function openAdd() { setModal({ item: null }) }
