@@ -8,6 +8,7 @@ import HeaderMenu from './HeaderMenu'
 import ItemFormModal from './ItemFormModal'
 import AuditLogModal from './AuditLogModal'
 import ServerDetailsModal from './ServerDetailsModal'
+import ItemDetailsModal from './ItemDetailsModal'
 
 const CATEGORIES = ['all', 'project', 'server', 'tool']
 
@@ -16,6 +17,7 @@ export default function Dashboard({ token, onLogout, isDark, toggleDark }) {
   const [filters, setFilters] = useState({ onlineOnly: false })
   const [modal, setModal] = useState(null) // null | { item: null } | { item: <item> }
   const [detailsItem, setDetailsItem] = useState(null)
+  const [itemDetailsItem, setItemDetailsItem] = useState(null)
   const [showLog, setShowLog] = useState(false)
 
   function setFilter(key, value) { setFilters(f => ({ ...f, [key]: value })) }
@@ -86,7 +88,7 @@ export default function Dashboard({ token, onLogout, isDark, toggleDark }) {
         )}
 
         {!loading && (
-          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="mt-6 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filtered.map((item) => (
               <ItemCard
                 key={item.id}
@@ -95,6 +97,7 @@ export default function Dashboard({ token, onLogout, isDark, toggleDark }) {
                 onEdit={openEdit}
                 onDelete={deleteItem}
                 onDetails={setDetailsItem}
+                onItemDetails={setItemDetailsItem}
               />
             ))}
           </div>
@@ -126,6 +129,10 @@ export default function Dashboard({ token, onLogout, isDark, toggleDark }) {
 
       {detailsItem && (
         <ServerDetailsModal item={detailsItem} token={token} onClose={() => setDetailsItem(null)} />
+      )}
+
+      {itemDetailsItem && (
+        <ItemDetailsModal item={itemDetailsItem} onAction={triggerAction} onEdit={openEdit} onClose={() => setItemDetailsItem(null)} />
       )}
 
       {showLog && (

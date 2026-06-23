@@ -8,7 +8,7 @@ const HEADER_BG = {
   tool: 'bg-amber-100 dark:bg-amber-950',
 }
 
-export default function ItemCard({ item, onAction, onEdit, onDelete, onDetails }) {
+export default function ItemCard({ item, onAction, onEdit, onDelete, onDetails, onItemDetails }) {
   const headerBg = HEADER_BG[item.category] ?? 'bg-gray-100'
 
   return (
@@ -16,11 +16,32 @@ export default function ItemCard({ item, onAction, onEdit, onDelete, onDetails }
       {/* Colored header */}
       <div className={`${headerBg} px-4 py-3 flex items-center justify-between gap-2`}>
         <span className="font-medium text-gray-900 dark:text-white text-sm truncate">{item.name}</span>
-        <StatusBadge status={item.status} />
+        <span className="sm:hidden"><StatusBadge status={item.status} compact /></span>
+        <span className="hidden sm:inline-flex"><StatusBadge status={item.status} /></span>
       </div>
 
-      {/* Body */}
-      <div className="px-4 py-3 flex flex-col gap-3 flex-1">
+      {/* Mobile-only compact footer */}
+      <div className="sm:hidden px-3 py-2 flex gap-2">
+        <button
+          onClick={() => onItemDetails(item)}
+          className="flex-1 text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-gray-600 dark:text-gray-300 hover:border-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
+        >
+          Details
+        </button>
+        {item.url && (
+          <a
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 text-center text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-gray-600 dark:text-gray-300 hover:border-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
+          >
+            Open
+          </a>
+        )}
+      </div>
+
+      {/* Desktop body */}
+      <div className="hidden sm:flex px-4 py-3 flex-col gap-3 flex-1">
         {/* Description */}
         {item.description && (
           <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">{item.description}</p>

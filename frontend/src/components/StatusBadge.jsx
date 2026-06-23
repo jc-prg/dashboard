@@ -4,7 +4,7 @@ const COLORS = {
   unknown: 'bg-gray-400',
 }
 
-export default function StatusBadge({ status }) {
+export default function StatusBadge({ status, compact = false }) {
   const color = COLORS[status] ?? COLORS.unknown
   return (
     <span className="flex items-center gap-1.5 shrink-0">
@@ -13,7 +13,9 @@ export default function StatusBadge({ status }) {
         role="img"
         aria-label={status}
       />
-      <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">{status}</span>
+      {!compact && (
+        <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">{status}</span>
+      )}
     </span>
   )
 }
