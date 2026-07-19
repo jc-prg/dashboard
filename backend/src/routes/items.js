@@ -19,6 +19,7 @@ function managementInfo(mgmt) {
       type: mgmt.type,
       serverId: mgmt.server_id,
       composeDir: mgmt.compose_dir || '',
+      composeFile: mgmt.compose_file || '',
       composeService: mgmt.compose_service || '',
     }
   }

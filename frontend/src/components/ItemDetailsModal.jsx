@@ -82,6 +82,7 @@ export default function ItemDetailsModal({ item, onAction, onEdit, onClose }) {
                 <>
                   <Row label="Server ID" value={mgmt.serverId} />
                   <Row label="Compose dir" value={mgmt.composeDir} />
+                  {mgmt.composeFile && <Row label="Compose file" value={mgmt.composeFile} />}
                   {mgmt.composeService && <Row label="Service" value={mgmt.composeService} />}
                 </>
               )}

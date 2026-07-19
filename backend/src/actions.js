@@ -1,6 +1,5 @@
 'use strict'
 
-const path = require('path')
 const { runSshCommand } = require('./ssh')
 const { isLocalHost, runLocalCommand } = require('./localExec')
 
@@ -16,7 +15,8 @@ function buildCommand(mgmt, action) {
     return 'sudo reboot'
   }
   if (mgmt.type === 'ssh-compose' && action === 'restart') {
-    const base = `cd ${mgmt.compose_dir} && docker compose restart`
+    const file = mgmt.compose_file ? ` -f ${mgmt.compose_file}` : ''
+    const base = `cd ${mgmt.compose_dir} && docker compose${file} restart`
     return mgmt.compose_service ? `${base} ${mgmt.compose_service}` : base
   }
   throw new Error(`No command mapping for type="${mgmt.type}" action="${action}"`)
@@ -31,8 +31,8 @@ function buildLocalCommand(mgmt, action) {
     return 'sudo reboot'
   }
   if (mgmt.type === 'ssh-compose' && action === 'restart') {
-    const project = path.basename(mgmt.compose_dir)
-    const base = `docker compose -p ${project} restart`
+    const file = mgmt.compose_file ? ` -f ${mgmt.compose_file}` : ''
+    const base = `cd ${mgmt.compose_dir} && docker compose${file} restart`
     return mgmt.compose_service ? `${base} ${mgmt.compose_service}` : base
   }
   throw new Error(`No command mapping for type="${mgmt.type}" action="${action}"`)

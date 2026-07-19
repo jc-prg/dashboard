@@ -18,7 +18,7 @@ function emptyForm() {
     mgmtOs: 'linux',
     mgmtServerId: '',
     mgmtHost: '', mgmtPort: '22', mgmtUser: '', mgmtSshKey: '',
-    mgmtComposeDir: '', mgmtComposeService: '',
+    mgmtComposeDir: '', mgmtComposeFile: '', mgmtComposeService: '',
   }
 }
 
@@ -40,6 +40,7 @@ function itemToForm(item) {
     mgmtUser: m?.user || '',
     mgmtSshKey: m?.sshKey || '',
     mgmtComposeDir: m?.composeDir || '',
+    mgmtComposeFile: m?.composeFile || '',
     mgmtComposeService: m?.composeService || '',
   }
 }
@@ -61,6 +62,9 @@ function formToBody(form, isEdit) {
         type: 'ssh-compose',
         server_id: form.mgmtServerId,
         compose_dir: form.mgmtComposeDir.trim(),
+      }
+      if (form.mgmtComposeFile.trim()) {
+        body.management.compose_file = form.mgmtComposeFile.trim()
       }
       if (form.mgmtComposeService.trim()) {
         body.management.compose_service = form.mgmtComposeService.trim()
@@ -364,6 +368,14 @@ export default function ItemFormModal({ item, servers = [], onSave, onClose }) {
                         value={form.mgmtComposeDir}
                         onChange={e => set('mgmtComposeDir', e.target.value)}
                         placeholder="/home/pi/apps/my-api"
+                      />
+                    </Field>
+                    <Field label="Compose file">
+                      <input
+                        className={inputClass(false)}
+                        value={form.mgmtComposeFile}
+                        onChange={e => set('mgmtComposeFile', e.target.value)}
+                        placeholder="docker-compose-zigbee.yml  (optional — omit to use default)"
                       />
                     </Field>
                     <Field label="Service name">

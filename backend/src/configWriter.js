@@ -93,6 +93,9 @@ function buildItem(data, id) {
         server_id: mgmt.server_id,
         compose_dir: mgmt.compose_dir,
       }
+      if (mgmt.compose_file?.trim()) {
+        item.management.compose_file = mgmt.compose_file.trim()
+      }
       if (mgmt.compose_service?.trim()) {
         item.management.compose_service = mgmt.compose_service.trim()
       }
