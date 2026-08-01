@@ -36,6 +36,11 @@ function loadConfig() {
       }
     }
 
+    let actions = mgmt ? (MANAGEMENT_ACTIONS[mgmt.type] || []) : []
+    if (mgmt?.type === 'ssh-server' && mgmt.allow_reboot === false) {
+      actions = actions.filter(a => a !== 'reboot')
+    }
+
     return {
       id: item.id,
       name: item.name,
@@ -45,7 +50,7 @@ function loadConfig() {
       health_check: item.health_check || null,
       tags: item.tags || [],
       management: mgmt,
-      actions: mgmt ? MANAGEMENT_ACTIONS[mgmt.type] : [],
+      actions,
     }
   })
 

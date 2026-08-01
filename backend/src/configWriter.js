@@ -108,6 +108,9 @@ function buildItem(data, id) {
         ssh_key: mgmt.ssh_key,
         os: mgmt.os || 'linux',
       }
+      if (mgmt.allow_reboot === false) {
+        item.management.allow_reboot = false
+      }
     }
   }
 

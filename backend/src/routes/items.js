@@ -30,6 +30,7 @@ function managementInfo(mgmt) {
     user: mgmt.user,
     sshKey: mgmt.ssh_key ? mgmt.ssh_key.replace(SECRETS_PREFIX, '') : '',
     os: mgmt.os || 'linux',
+    allowReboot: mgmt.allow_reboot !== false,
   }
 }
 

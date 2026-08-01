@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 const SECRETS_PREFIX = '/app/config/secrets/'
 
@@ -16,6 +16,7 @@ function emptyForm() {
     url: '', healthCheck: '', tags: '',
     mgmtType: 'none',
     mgmtOs: 'linux',
+    mgmtAllowReboot: true,
     mgmtServerId: '',
     mgmtHost: '', mgmtPort: '22', mgmtUser: '', mgmtSshKey: '',
     mgmtComposeDir: '', mgmtComposeFile: '', mgmtComposeService: '',
@@ -34,6 +35,7 @@ function itemToForm(item) {
     tags: (item.tags || []).join(', '),
     mgmtType: m?.type || 'none',
     mgmtOs: m?.os || 'linux',
+    mgmtAllowReboot: m?.allowReboot !== false,
     mgmtServerId: m?.serverId || '',
     mgmtHost: m?.host || '',
     mgmtPort: String(m?.port || 22),
@@ -77,6 +79,7 @@ function formToBody(form, isEdit) {
         user: form.mgmtUser.trim(),
         ssh_key: SECRETS_PREFIX + form.mgmtSshKey.trim(),
         os: form.mgmtOs || 'linux',
+        allow_reboot: form.mgmtAllowReboot,
       }
     }
   }
@@ -119,6 +122,48 @@ const inputClass = (hasError) =>
   `w-full border rounded px-2.5 py-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
     hasError ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'
   }`
+
+function SshKeyInfoPopover() {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    function handleClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [open])
+
+  return (
+    <div className="relative inline-flex" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors leading-none"
+        title="How to set up SSH keys"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="16" x2="12" y2="12" />
+          <line x1="12" y1="8" x2="12.01" y2="8" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-5 z-50 w-80 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-3 text-xs text-gray-700 dark:text-gray-300 flex flex-col gap-2">
+          <p className="font-semibold text-gray-900 dark:text-white">Setting up SSH key access</p>
+          <p>1. Generate a key pair on the dashboard host:</p>
+          <pre className="bg-gray-100 dark:bg-gray-800 rounded px-2 py-1.5 text-gray-800 dark:text-gray-200 overflow-x-auto whitespace-pre-wrap">{`ssh-keygen -t ed25519 \\\n  -f config/secrets/<filename> \\\n  -N ""`}</pre>
+          <p>2. Copy the public key to the target server:</p>
+          <pre className="bg-gray-100 dark:bg-gray-800 rounded px-2 py-1.5 text-gray-800 dark:text-gray-200 overflow-x-auto whitespace-pre-wrap">{`ssh-copy-id -i config/secrets/<filename>.pub user@server`}</pre>
+          <p className="text-gray-500 dark:text-gray-400">The private key file stays in <code className="bg-gray-100 dark:bg-gray-800 px-0.5 rounded">config/secrets/</code> on the dashboard host. Enter only the filename (without path) in the field above.</p>
+        </div>
+      )}
+    </div>
+  )
+}
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
@@ -331,7 +376,7 @@ export default function ItemFormModal({ item, servers = [], onSave, onClose }) {
                       />
                     </Field>
 
-                    <Field label="SSH key filename" required error={err('mgmtSshKey') || serverErrors['management.ssh_key']}>
+                    <Field label={<span className="inline-flex items-center gap-1">SSH key filename <SshKeyInfoPopover /></span>} required error={err('mgmtSshKey') || serverErrors['management.ssh_key']}>
                       <div className="flex items-center gap-1">
                         <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">secrets/</span>
                         <input
@@ -357,6 +402,16 @@ export default function ItemFormModal({ item, servers = [], onSave, onClose }) {
                         ))}
                       </select>
                     </Field>
+
+                    <label className="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={form.mgmtAllowReboot}
+                        onChange={e => set('mgmtAllowReboot', e.target.checked)}
+                        className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                      />
+                      Allow server reboot
+                    </label>
                   </>
                 )}
 
