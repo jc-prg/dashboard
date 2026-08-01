@@ -54,7 +54,7 @@ export default function HeaderMenu({ onAddItem, onShowCompose, onShowLog, onExpo
             onClick={() => action(onShowCompose)}
             className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
-            Compose services
+            Control center
           </button>
           <button
             onClick={() => action(onShowLog)}

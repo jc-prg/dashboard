@@ -41,7 +41,7 @@ export default function ComposeView({ items, onAction, onClose }) {
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-          <h2 className="text-base font-semibold text-gray-900 dark:text-white">Compose services</h2>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-white">Control center</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-lg leading-none"
