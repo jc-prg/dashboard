@@ -24,15 +24,17 @@ function buildCommand(mgmt, action) {
 
 /**
  * Build a command that can run locally (without SSH).
- * For ssh-compose: uses `docker compose -p <project>` so no compose file path is needed.
+ * Uses `docker compose -p <project>` so the host path does not need to be
+ * mounted inside the container. The project name is the basename of compose_dir,
+ * which matches Docker Compose's default naming convention.
  */
 function buildLocalCommand(mgmt, action) {
   if (mgmt.type === 'ssh-server' && action === 'reboot') {
     return 'sudo reboot'
   }
   if (mgmt.type === 'ssh-compose' && ['start', 'stop', 'restart'].includes(action)) {
-    const file = mgmt.compose_file ? ` -f ${mgmt.compose_file}` : ''
-    const base = `cd ${mgmt.compose_dir} && docker compose${file} ${action}`
+    const projectName = mgmt.compose_dir.replace(/\/+$/, '').split('/').pop()
+    const base = `docker compose -p ${projectName} ${action}`
     return mgmt.compose_service ? `${base} ${mgmt.compose_service}` : base
   }
   throw new Error(`No command mapping for type="${mgmt.type}" action="${action}"`)
