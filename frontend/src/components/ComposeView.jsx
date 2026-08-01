@@ -69,9 +69,26 @@ export default function ComposeView({ items, onAction, onClose }) {
                   {/* Status dot */}
                   <StatusDot status={item.status} />
 
-                  {/* Name */}
-                  <span className="flex-1 text-sm font-medium text-gray-900 dark:text-white truncate">
-                    {item.name}
+                  {/* Name + link */}
+                  <span className="flex-1 flex items-center gap-1.5 min-w-0">
+                    <span className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                      {item.name}
+                    </span>
+                    {item.url && (
+                      <a
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={item.url}
+                        className="flex-shrink-0 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
+                          <polyline points="15 3 21 3 21 9" />
+                          <line x1="10" y1="14" x2="21" y2="3" />
+                        </svg>
+                      </a>
+                    )}
                   </span>
 
                   {/* Pending indicator */}
