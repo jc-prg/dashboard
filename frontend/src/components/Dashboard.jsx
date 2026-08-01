@@ -7,6 +7,7 @@ import FilterMenu from './FilterMenu'
 import HeaderMenu from './HeaderMenu'
 import ItemFormModal from './ItemFormModal'
 import AuditLogModal from './AuditLogModal'
+import ComposeView from './ComposeView'
 import ServerDetailsModal from './ServerDetailsModal'
 import ItemDetailsModal from './ItemDetailsModal'
 
@@ -19,6 +20,7 @@ export default function Dashboard({ token, onLogout, isDark, toggleDark }) {
   const [detailsItem, setDetailsItem] = useState(null)
   const [itemDetailsItem, setItemDetailsItem] = useState(null)
   const [showLog, setShowLog] = useState(false)
+  const [showCompose, setShowCompose] = useState(false)
   const [importError, setImportError] = useState(null)
   const importInputRef = useRef(null)
 
@@ -98,6 +100,7 @@ export default function Dashboard({ token, onLogout, isDark, toggleDark }) {
           </button>
           <HeaderMenu
             onAddItem={openAdd}
+            onShowCompose={() => setShowCompose(true)}
             onShowLog={() => setShowLog(true)}
             onExport={exportConfig}
             onImport={() => importInputRef.current?.click()}
@@ -172,6 +175,10 @@ export default function Dashboard({ token, onLogout, isDark, toggleDark }) {
 
       {itemDetailsItem && (
         <ItemDetailsModal item={itemDetailsItem} onAction={triggerAction} onEdit={openEdit} onClose={() => setItemDetailsItem(null)} />
+      )}
+
+      {showCompose && (
+        <ComposeView items={items} onAction={triggerAction} onClose={() => setShowCompose(false)} />
       )}
 
       {showLog && (

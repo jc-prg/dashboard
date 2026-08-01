@@ -10,7 +10,7 @@ function MenuIcon() {
   )
 }
 
-export default function HeaderMenu({ onAddItem, onShowLog, onExport, onImport, onLogout }) {
+export default function HeaderMenu({ onAddItem, onShowCompose, onShowLog, onExport, onImport, onLogout }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -49,6 +49,12 @@ export default function HeaderMenu({ onAddItem, onShowLog, onExport, onImport, o
             className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
             + Add item
+          </button>
+          <button
+            onClick={() => action(onShowCompose)}
+            className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
+            Compose services
           </button>
           <button
             onClick={() => action(onShowLog)}

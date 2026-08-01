@@ -5,7 +5,7 @@ const { loadConfig } = require('../config')
 const { executeAction } = require('../actions')
 const { append } = require('../auditLog')
 
-const ALLOWED_ACTIONS = ['restart', 'reboot']
+const ALLOWED_ACTIONS = ['start', 'stop', 'restart', 'reboot']
 
 const router = Router()
 

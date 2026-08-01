@@ -7,16 +7,16 @@ const SSH_CONNECT_TIMEOUT_MS = parseInt(process.env.SSH_CONNECT_TIMEOUT_MS || '8
 
 const ALLOWED_ACTIONS = {
   'ssh-server': ['reboot'],
-  'ssh-compose': ['restart'],
+  'ssh-compose': ['start', 'stop', 'restart'],
 }
 
 function buildCommand(mgmt, action) {
   if (mgmt.type === 'ssh-server' && action === 'reboot') {
     return 'sudo reboot'
   }
-  if (mgmt.type === 'ssh-compose' && action === 'restart') {
+  if (mgmt.type === 'ssh-compose' && ['start', 'stop', 'restart'].includes(action)) {
     const file = mgmt.compose_file ? ` -f ${mgmt.compose_file}` : ''
-    const base = `cd ${mgmt.compose_dir} && docker compose${file} restart`
+    const base = `cd ${mgmt.compose_dir} && docker compose${file} ${action}`
     return mgmt.compose_service ? `${base} ${mgmt.compose_service}` : base
   }
   throw new Error(`No command mapping for type="${mgmt.type}" action="${action}"`)
@@ -30,9 +30,9 @@ function buildLocalCommand(mgmt, action) {
   if (mgmt.type === 'ssh-server' && action === 'reboot') {
     return 'sudo reboot'
   }
-  if (mgmt.type === 'ssh-compose' && action === 'restart') {
+  if (mgmt.type === 'ssh-compose' && ['start', 'stop', 'restart'].includes(action)) {
     const file = mgmt.compose_file ? ` -f ${mgmt.compose_file}` : ''
-    const base = `cd ${mgmt.compose_dir} && docker compose${file} restart`
+    const base = `cd ${mgmt.compose_dir} && docker compose${file} ${action}`
     return mgmt.compose_service ? `${base} ${mgmt.compose_service}` : base
   }
   throw new Error(`No command mapping for type="${mgmt.type}" action="${action}"`)

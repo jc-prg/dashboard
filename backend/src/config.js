@@ -7,7 +7,7 @@ const CONFIG_PATH = process.env.CONFIG_PATH || '/app/config/items.yml'
 
 const MANAGEMENT_ACTIONS = {
   'ssh-server': ['reboot'],
-  'ssh-compose': ['restart'],
+  'ssh-compose': ['start', 'stop', 'restart'],
 }
 
 function loadConfig() {
