@@ -3,7 +3,7 @@
 const express = require('express')
 const { maybeResetPassword } = require('./resetPassword')
 const { authMiddleware } = require('./middleware/auth')
-const { startHealthCheckScheduler } = require('./healthcheck')
+const { startHealthCheckScheduler, runAllChecks } = require('./healthcheck')
 const { loadConfig } = require('./config')
 const authRouter = require('./routes/auth')
 const itemsRouter = require('./routes/items')
@@ -55,6 +55,11 @@ app.get('/api/config', (req, res) => {
   } catch (err) {
     res.status(500).json({ error: `Config error: ${err.message}` })
   }
+})
+
+app.post('/api/healthcheck/run', async (req, res) => {
+  await runAllChecks(REQUEST_TIMEOUT_MS)
+  res.json({ ok: true })
 })
 
 startHealthCheckScheduler(CHECK_INTERVAL_SECONDS * 1000, REQUEST_TIMEOUT_MS)

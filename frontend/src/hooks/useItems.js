@@ -24,6 +24,16 @@ export function useItems(token, onUnauthorized, isOnline = true) {
     }
   }, [token, isOnline]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const refresh = useCallback(async () => {
+    if (!isOnline) return
+    try {
+      await fetch('/api/healthcheck/run', { method: 'POST', headers: authHeader })
+    } catch {
+      // ignore — fetchItems will still run
+    }
+    await fetchItems()
+  }, [fetchItems, isOnline]) // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (!isOnline) { setError(null); return }
     fetchItems()
@@ -98,5 +108,5 @@ export function useItems(token, onUnauthorized, isOnline = true) {
     await fetchItems()
   }
 
-  return { items, loading, error, refresh: fetchItems, triggerAction, createItem, updateItem, deleteItem, exportConfig, importConfig }
+  return { items, loading, error, refresh, triggerAction, createItem, updateItem, deleteItem, exportConfig, importConfig }
 }
