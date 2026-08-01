@@ -16,7 +16,9 @@ function buildCommand(mgmt, action) {
   }
   if (mgmt.type === 'ssh-compose' && ['start', 'stop', 'restart'].includes(action)) {
     const file = mgmt.compose_file ? ` -f ${mgmt.compose_file}` : ''
-    const base = `cd ${mgmt.compose_dir} && docker compose${file} ${action}`
+    // Use "up -d" instead of "start" so containers are created if they don't exist yet
+    const dockerAction = action === 'start' ? 'up -d' : action
+    const base = `cd ${mgmt.compose_dir} && docker compose${file} ${dockerAction}`
     return mgmt.compose_service ? `${base} ${mgmt.compose_service}` : base
   }
   throw new Error(`No command mapping for type="${mgmt.type}" action="${action}"`)
@@ -34,7 +36,8 @@ function buildLocalCommand(mgmt, action) {
   }
   if (mgmt.type === 'ssh-compose' && ['start', 'stop', 'restart'].includes(action)) {
     const projectName = mgmt.compose_dir.replace(/\/+$/, '').split('/').pop()
-    const base = `docker compose -p ${projectName} ${action}`
+    const dockerAction = action === 'start' ? 'up -d' : action
+    const base = `docker compose -p ${projectName} ${dockerAction}`
     return mgmt.compose_service ? `${base} ${mgmt.compose_service}` : base
   }
   throw new Error(`No command mapping for type="${mgmt.type}" action="${action}"`)
