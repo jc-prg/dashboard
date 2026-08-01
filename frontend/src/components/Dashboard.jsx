@@ -165,6 +165,7 @@ export default function Dashboard({ token, onLogout, isDark, toggleDark }) {
           item={modal.item}
           servers={items.filter(i => i.category === 'server')}
           onSave={handleSave}
+          onSaveCopy={createItem}
           onClose={closeModal}
         />
       )}

@@ -167,7 +167,7 @@ function SshKeyInfoPopover() {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function ItemFormModal({ item, servers = [], onSave, onClose }) {
+export default function ItemFormModal({ item, servers = [], onSave, onSaveCopy, onClose }) {
   const isEdit = !!item
   const [form, setForm] = useState(isEdit ? itemToForm(item) : emptyForm())
   const [idTouched, setIdTouched] = useState(isEdit)
@@ -197,6 +197,31 @@ export default function ItemFormModal({ item, servers = [], onSave, onClose }) {
     setServerErrors({})
     try {
       await onSave(formToBody(form, isEdit))
+      onClose()
+    } catch (err) {
+      if (err.fields) {
+        setServerErrors(err.fields)
+      } else {
+        setServerErrors({ _general: err.message })
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleSaveAsCopy() {
+    const clientErrors = validateForm(form)
+    if (clientErrors) { setErrors(clientErrors); return }
+
+    setLoading(true)
+    setServerErrors({})
+    try {
+      const body = formToBody(form, true) // omit id — backend generates one
+      delete body.id
+      if (form.name.trim() === item.name) {
+        body.name = `${body.name} (copy)`
+      }
+      await onSaveCopy(body)
       onClose()
     } catch (err) {
       if (err.fields) {
@@ -449,7 +474,18 @@ export default function ItemFormModal({ item, servers = [], onSave, onClose }) {
         </form>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-2 px-4 py-3 border-t border-gray-200 dark:border-gray-700">
+          {isEdit && (
+            <button
+              type="button"
+              onClick={handleSaveAsCopy}
+              disabled={loading}
+              className="text-sm border border-gray-300 dark:border-gray-600 dark:text-gray-300 rounded px-4 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
+            >
+              Save as copy
+            </button>
+          )}
+          <span className="flex-1" />
           <button
             type="button"
             onClick={onClose}
