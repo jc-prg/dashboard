@@ -9,11 +9,12 @@ const detailsCache = {}
 
 function buildLinuxCommand() {
   return [
+    "awk -F= '/^PRETTY_NAME/{gsub(/\"/,\"\",$2); print \"DISTRO:\"$2}' /etc/os-release",
     // All real mounts: exclude virtual/pseudo filesystems, output STORAGE:<mount>=<avail>/<total>
     "df -h | awk 'NR>1 && $1 !~ /^(tmpfs|devtmpfs|udev|none|overlay|shm|cgroupfs|squashfs)/ && $6 ~ /^\\//{printf \"STORAGE:%s=%s/%s\\n\",$6,$4,$2}'",
     "awk '/^cpu /{u=$2+$4;t=$2+$3+$4+$5;printf \"CPU:%.1f\\n\",(t>0)?u/t*100:0}' /proc/stat",
-    "free -m | awk '/^Mem/{printf \"MEM_USED:%dMB\\nMEM_TOTAL:%dMB\\n\",$3,$2}'",
-    "uptime -s | awk '{print \"STARTED:\"$0}'",
+    "awk '/MemTotal/{t=$2} /MemAvailable/{a=$2} END{printf \"MEM_USED:%dMB\\nMEM_TOTAL:%dMB\\n\",int((t-a)/1024),int(t/1024)}' /proc/meminfo",
+    "b=$(awk '/^btime/{print $2}' /proc/stat); echo \"STARTED:$(date -d @$b '+%Y-%m-%d %H:%M:%S' 2>/dev/null || awk -v b=$b 'BEGIN{print strftime(\"%Y-%m-%d %H:%M:%S\",b)}')\"",
   ].join('; ')
 }
 
@@ -24,6 +25,7 @@ function buildWindowsCommand() {
     '$cpu=(Get-WmiObject Win32_Processor|Measure-Object LoadPercentage -Average).Average',
     'Write-Host ("CPU:"+$cpu)',
     '$os=Get-WmiObject Win32_OperatingSystem',
+    'Write-Host ("DISTRO:"+$os.Caption)',
     '$mt=[math]::Round($os.TotalVisibleMemorySize/1024)',
     '$mf=[math]::Round($os.FreePhysicalMemory/1024)',
     'Write-Host ("MEM_USED:"+($mt-$mf)+"MB")',
@@ -51,6 +53,7 @@ function parseOutput(stdout) {
     kv[line.slice(0, idx).trim()] = line.slice(idx + 1).trim()
   }
   return {
+    distro: kv.DISTRO || null,
     storageList,
     cpuUsage: kv.CPU != null ? `${parseFloat(kv.CPU).toFixed(1)}%` : null,
     memUsed: kv.MEM_USED || null,

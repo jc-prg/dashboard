@@ -73,6 +73,7 @@ export default function ServerDetailsModal({ item, token, onClose }) {
           )}
           {data && (
             <div>
+              {data.distro && <Row label="OS" value={data.distro} />}
               {data.storageList?.map(({ mount, value }) => (
                 <Row key={mount} label={`Storage usage ${mount}`} value={value} />
               ))}
