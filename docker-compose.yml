@@ -3,7 +3,7 @@ version: "3.9"
 services:
   backend:
     build: ./backend
-    restart: unless-stopped
+    restart: always
     volumes:
       - ./config/items.yml:/app/config/items.yml
       - ./config/secrets:/app/config/secrets:ro
@@ -24,7 +24,7 @@ services:
 
   frontend:
     build: ./frontend
-    restart: unless-stopped
+    restart: always
     ports:
       - "${FRONTEND_PORT:-80}:80"
     depends_on:
