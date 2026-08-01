@@ -122,9 +122,12 @@ export default function ComposeView({ items, onAction, onClose }) {
                     onClick={() => handle(item.id, 'restart')}
                     disabled={isBusy}
                     title="Restart"
-                    className="text-base text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-40 transition-colors px-1 leading-none"
+                    className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-40 transition-colors flex items-center justify-center"
                   >
-                    ↻
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="1 4 1 10 7 10" />
+                      <path d="M3.51 15a9 9 0 1 0 .49-3.51" />
+                    </svg>
                   </button>
                 </div>
               )
