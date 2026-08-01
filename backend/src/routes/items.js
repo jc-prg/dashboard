@@ -3,7 +3,7 @@
 const { Router } = require('express')
 const { loadConfig, MANAGEMENT_ACTIONS } = require('../config')
 const { getStatus } = require('../healthcheck')
-const { addItem, updateItem, deleteItem } = require('../configWriter')
+const { addItem, updateItem, deleteItem, readItems, importConfig } = require('../configWriter')
 const { append } = require('../auditLog')
 const { fetchServerDetails } = require('../serverDetails')
 
@@ -64,6 +64,29 @@ function handleWriteError(err, res) {
   if (err.fields) body.fields = err.fields
   res.status(status).json(body)
 }
+
+// ─── Export / Import ──────────────────────────────────────────────────────────
+
+router.get('/export', (req, res) => {
+  try {
+    res.json({ items: readItems() })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+router.post('/import', (req, res) => {
+  try {
+    const { items } = req.body
+    if (!Array.isArray(items)) return res.status(400).json({ error: 'Expected { items: [...] }' })
+    importConfig(items)
+    append({ type: 'import', itemId: null, itemName: `${items.length} items`, success: true })
+    res.json({ ok: true, count: items.length })
+  } catch (err) {
+    append({ type: 'import', itemId: null, itemName: '?', success: false, error: err.message })
+    handleWriteError(err, res)
+  }
+})
 
 // ─── Read ─────────────────────────────────────────────────────────────────────
 

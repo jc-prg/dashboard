@@ -77,5 +77,26 @@ export function useItems(token, onUnauthorized, isOnline = true) {
     await fetchItems()
   }
 
-  return { items, loading, error, refresh: fetchItems, triggerAction, createItem, updateItem, deleteItem }
+  // ─── Export / Import ─────────────────────────────────────────────────────
+
+  async function exportConfig() {
+    const res = await fetch('/api/items/export', { headers: authHeader })
+    if (res.status === 401) { onUnauthorized?.(); throw new Error('Unauthorized') }
+    if (!res.ok) throw new Error(`Export failed: HTTP ${res.status}`)
+    const data = await res.json()
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'dashboard-config.json'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  async function importConfig(jsonData) {
+    await apiWrite('/api/items/import', 'POST', jsonData)
+    await fetchItems()
+  }
+
+  return { items, loading, error, refresh: fetchItems, triggerAction, createItem, updateItem, deleteItem, exportConfig, importConfig }
 }

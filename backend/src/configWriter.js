@@ -203,4 +203,18 @@ function deleteItem(id) {
   writeItems(existing.filter(i => i.id !== id))
 }
 
-module.exports = { addItem, updateItem, deleteItem, generateId, slugify, validate }
+function importConfig(items) {
+  const oldContent = fs.readFileSync(CONFIG_PATH, 'utf8')
+  writeItems(items)
+  try {
+    // Validate by re-parsing; loadConfig is required lazily to avoid circular dep
+    require('./config').loadConfig()
+  } catch (err) {
+    fs.writeFileSync(CONFIG_PATH, oldContent, 'utf8')
+    const e = new Error(`Invalid config: ${err.message}`)
+    e.statusCode = 400
+    throw e
+  }
+}
+
+module.exports = { addItem, updateItem, deleteItem, generateId, slugify, validate, readItems, importConfig }

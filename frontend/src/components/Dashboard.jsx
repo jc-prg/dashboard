@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useItems } from '../hooks/useItems'
 import { useConnectionStatus } from '../hooks/useConnectionStatus'
 import ItemCard from './ItemCard'
@@ -19,6 +19,8 @@ export default function Dashboard({ token, onLogout, isDark, toggleDark }) {
   const [detailsItem, setDetailsItem] = useState(null)
   const [itemDetailsItem, setItemDetailsItem] = useState(null)
   const [showLog, setShowLog] = useState(false)
+  const [importError, setImportError] = useState(null)
+  const importInputRef = useRef(null)
 
   function setFilter(key, value) { setFilters(f => ({ ...f, [key]: value })) }
 
@@ -26,7 +28,7 @@ export default function Dashboard({ token, onLogout, isDark, toggleDark }) {
 
   const {
     items, loading, error, refresh,
-    triggerAction, createItem, updateItem, deleteItem,
+    triggerAction, createItem, updateItem, deleteItem, exportConfig, importConfig,
   } = useItems(token, onLogout, isOnline)
 
   const availableTags = [...new Set(items.flatMap(i => i.tags ?? []))].sort()
@@ -39,6 +41,21 @@ export default function Dashboard({ token, onLogout, isDark, toggleDark }) {
   function openAdd() { setModal({ item: null }) }
   function openEdit(item) { setModal({ item }) }
   function closeModal() { setModal(null) }
+
+  async function handleImportFile(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (!window.confirm(`Import "${file.name}"? This will overwrite the current configuration.`)) return
+    try {
+      const text = await file.text()
+      const json = JSON.parse(text)
+      setImportError(null)
+      await importConfig(json)
+    } catch (err) {
+      setImportError(err.message)
+    }
+  }
 
   async function handleSave(body) {
     if (modal.item) {
@@ -54,6 +71,12 @@ export default function Dashboard({ token, onLogout, isDark, toggleDark }) {
         <div className="fixed inset-x-0 top-0 z-50 flex items-center justify-center gap-2 bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-md">
           <span className="inline-block h-2 w-2 rounded-full bg-white opacity-80 animate-pulse" />
           Backend unreachable — retrying…
+        </div>
+      )}
+      {importError && (
+        <div className="fixed inset-x-0 top-0 z-50 flex items-center justify-center gap-3 bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-md">
+          Import failed: {importError}
+          <button onClick={() => setImportError(null)} className="underline">Dismiss</button>
         </div>
       )}
       <header className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
@@ -73,7 +96,20 @@ export default function Dashboard({ token, onLogout, isDark, toggleDark }) {
           >
             ↻
           </button>
-          <HeaderMenu onAddItem={openAdd} onShowLog={() => setShowLog(true)} onLogout={onLogout} />
+          <HeaderMenu
+            onAddItem={openAdd}
+            onShowLog={() => setShowLog(true)}
+            onExport={exportConfig}
+            onImport={() => importInputRef.current?.click()}
+            onLogout={onLogout}
+          />
+          <input
+            ref={importInputRef}
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            onChange={handleImportFile}
+          />
         </div>
       </header>
 
