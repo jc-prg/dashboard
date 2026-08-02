@@ -15,6 +15,7 @@ A personal developer dashboard that provides a unified overview of software proj
 - **Auto-refresh**: Status checks run on a configurable interval (default: 60 s)
 - **Remote actions**: Per-item restart / reboot buttons — executed via SSH on Raspberry Pi hosts
 - **Authentication**: HTTP Basic Auth protects every API route and the frontend from the first deployment
+- **Two-factor authentication**: Email-based 2FA required for access from outside the configured intranet CIDR range; verified devices are trusted for a configurable number of days
 - **Item management**: Add, edit, and delete items through the UI — changes are written back to `items.yml` immediately
 
 ---
@@ -127,7 +128,9 @@ config/
 |-----------|------------|------|
 | **Frontend** | React + Vite + Tailwind CSS | Dashboard UI, login form, card grid, status badges, action buttons |
 | **Backend API** | Node.js + Express | Config loading, health checks, SSH action execution |
-| **Auth middleware** | `express-basic-auth` | Validates credentials on every request; returns 401 on failure |
+| **Auth middleware** | `express-basic-auth` | Validates password on every request; returns 401 on failure |
+| **2FA middleware** | custom (`twoFactor.js`) | Enforces email 2FA for external IPs; skips intranet and `/api/auth/*` routes |
+| **Email sender** | `nodemailer` | Sends 6-digit codes via SMTP with SSL/STARTTLS |
 | **SSH client** | `ssh2` npm package | Connects to Raspberry Pi hosts, runs remote commands |
 | **Config file** | `config/items.yml` | Single source of truth for all items and management config |
 | **Reverse proxy** | Nginx (optional) | TLS termination and single-port access |
@@ -140,8 +143,10 @@ All endpoints require a valid `Authorization: Basic <token>` header. Requests wi
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `GET` | `/api/auth/check` | required | Returns 200 if credentials are valid; used by the frontend to verify stored credentials on load |
-| `GET` | `/api/items` | required | Returns all items with current status and available actions |
+| `GET` | `/api/auth/check` | password | Returns 200 with `twoFactorRequired` flag; used on load and after login to decide whether 2FA is needed |
+| `POST` | `/api/auth/2fa/send` | password | Generates a 6-digit code, sends it to `TWO_FA_EMAIL`, returns `{ challengeId }` |
+| `POST` | `/api/auth/2fa/verify` | password | Validates `{ challengeId, code }`; on success sets `2fa_token` HttpOnly cookie and returns `{ ok: true }` |
+| `GET` | `/api/items` | password + 2FA | Returns all items with current status and available actions |
 | `GET` | `/api/items/:id/status` | required | Returns live status for a single item |
 | `POST` | `/api/items` | required | Creates a new item and writes it to `items.yml` |
 | `PUT` | `/api/items/:id` | required | Updates an existing item and writes changes to `items.yml` |
@@ -218,11 +223,8 @@ The backend validates uniqueness of `id` before writing.
 ```
 ┌──────────────────────────────────────────────┐
 │                                              │
-│            Developer Dashboard               │
+│            jc://dashboard/                   │
 │                                              │
-│         ┌────────────────────────┐           │
-│  User   │ admin                  │           │
-│         └────────────────────────┘           │
 │         ┌────────────────────────┐           │
 │  Pass   │ ••••••••               │           │
 │         └────────────────────────┘           │
@@ -230,6 +232,40 @@ The backend validates uniqueness of `id` before writing.
 │              [ Sign in ]                     │
 │                                              │
 │  (error message shown here on failure)       │
+└──────────────────────────────────────────────┘
+```
+
+### 2FA screen (shown after password login from an external IP)
+
+```
+┌──────────────────────────────────────────────┐
+│                                              │
+│            jc://dashboard/                   │
+│    Two-factor verification required          │
+│                                              │
+│  Access from outside the intranet requires   │
+│  a verification code sent to your email.     │
+│                                              │
+│       [ Send verification code ]             │
+│                                              │
+└──────────────────────────────────────────────┘
+
+After sending:
+
+┌──────────────────────────────────────────────┐
+│                                              │
+│            jc://dashboard/                   │
+│    Two-factor verification required          │
+│                                              │
+│  A 6-digit code was sent to your email.      │
+│                                              │
+│         ┌────────────────────────┐           │
+│  Code   │ 1 2 3 4 5 6            │           │
+│         └────────────────────────┘           │
+│                                              │
+│              [ Verify ]                      │
+│           Resend code                        │
+│                                              │
 └──────────────────────────────────────────────┘
 ```
 
@@ -334,6 +370,7 @@ dashboard/
 │   └── architecture.md
 ├── config/
 │   ├── items.yml
+│   ├── 2fa-tokens.json       # verified device tokens (committed as {}; modified at runtime)
 │   └── secrets/              # SSH keys, not committed to git
 │       └── .gitkeep
 ├── frontend/
@@ -347,6 +384,7 @@ dashboard/
 │       ├── App.jsx
 │       ├── components/
 │       │   ├── LoginForm.jsx
+│       │   ├── TwoFactorForm.jsx  # 2FA code entry (send + verify steps)
 │       │   ├── Dashboard.jsx
 │       │   ├── ItemCard.jsx
 │       │   ├── StatusBadge.jsx
@@ -377,10 +415,12 @@ dashboard/
 │       ├── healthcheck.js
 │       ├── ssh.js
 │       ├── actions.js
+│       ├── twoFactor.js               # CIDR check, code/token management, email sending
 │       ├── middleware/
-│       │   └── auth.js                # express-basic-auth setup
+│       │   ├── auth.js                # express-basic-auth setup (password only)
+│       │   └── twoFactor.js           # 2FA enforcement for external IPs
 │       ├── routes/
-│       │   ├── auth.js                # GET /api/auth/check
+│       │   ├── auth.js                # GET /check, POST /2fa/send, POST /2fa/verify
 │       │   ├── items.js               # GET, POST, PUT, DELETE
 │       │   └── actions.js
 │       ├── configWriter.js            # reads + writes items.yml atomically
@@ -433,12 +473,25 @@ networks:
     name: dashboard_net
 ```
 
-Credentials are supplied via a `.env` file (not committed to git):
+Credentials and 2FA settings are supplied via a `.env` file (not committed to git):
 
 ```ini
 # .env  — add to .gitignore
 DASHBOARD_USER=admin
 DASHBOARD_PASSWORD=changeme
+
+# Two-factor authentication
+INTRANET_CIDR=192.168.1.0/24      # requests from this range bypass 2FA
+TWO_FA_EMAIL=admin@example.com    # receives the verification code
+TWO_FA_VALIDITY_DAYS=30           # days a verified device is trusted
+
+# SMTP (for sending the 2FA code)
+SMTP_HOST=smtp.example.com
+SMTP_PORT=465
+SMTP_SECURE=true                  # true = direct SSL (465), false = STARTTLS (587)
+SMTP_USER=sender@example.com
+SMTP_PASS="your-password"         # quote if it contains special characters
+SMTP_FROM=dashboard@example.com
 ```
 
 ---
@@ -447,47 +500,86 @@ DASHBOARD_PASSWORD=changeme
 
 ### Approach
 
-HTTP Basic Auth is applied as an Express middleware (`express-basic-auth`) that wraps every route. The middleware performs a **timing-safe string comparison** to prevent timing attacks. No sessions or cookies are used — the frontend holds the encoded credential in `sessionStorage` and attaches it to every request.
+HTTP Basic Auth is applied as an Express middleware (`express-basic-auth`) that wraps every route. The middleware performs a **timing-safe password comparison** to prevent timing attacks. No username is shown or entered — the frontend hardcodes a placeholder and sends only the password.
+
+For access from **outside the intranet** (IP not in `INTRANET_CIDR`), a second factor is required: a 6-digit code sent to a predefined email address. Once verified, an HttpOnly cookie trusts the browser for `TWO_FA_VALIDITY_DAYS` days. Verified device tokens are persisted to `config/2fa-tokens.json` and survive backend restarts.
 
 ### Credential storage
 
 | Location | What is stored | Notes |
 |----------|---------------|-------|
-| Host `.env` file | Plain-text username and password | Not committed to git; loaded into the backend container via Docker Compose env interpolation |
-| Backend env vars | `DASHBOARD_USER`, `DASHBOARD_PASSWORD` | Read once at startup by the auth middleware |
-| Browser `sessionStorage` | Base64-encoded `username:password` token | Cleared on sign-out or tab close; never persisted to `localStorage` |
+| Host `.env` file | Plain-text password and SMTP credentials | Not committed to git; loaded into the backend container via Docker Compose env interpolation |
+| Backend env vars | `DASHBOARD_PASSWORD` | Read at startup by the auth middleware; username is not required |
+| Browser `sessionStorage` | Base64-encoded `user:password` token | Cleared on sign-out or tab close; never persisted to `localStorage` |
+| Browser cookie | `2fa_token` (HttpOnly, SameSite=Strict) | Set after successful 2FA verify; expires after `TWO_FA_VALIDITY_DAYS` days |
+| `config/2fa-tokens.json` | `{ token: isoExpiry, … }` | Server-side record of valid device tokens; expired entries pruned on read |
 
-### Backend middleware (`middleware/auth.js`)
+### Backend middleware
 
+**`middleware/auth.js`** — password-only Basic Auth, applied to all routes:
 ```
 express-basic-auth({
-  users: { [process.env.DASHBOARD_USER]: process.env.DASHBOARD_PASSWORD },
+  authorizer: (_, pwd) => basicAuth.safeCompare(pwd, process.env.DASHBOARD_PASSWORD),
   unauthorizedResponse: { error: 'Unauthorized' }
 })
 ```
 
-Applied globally before all route registrations so no route is accidentally left unprotected.
+**`middleware/twoFactor.js`** — 2FA check, applied after Basic Auth, skips all `/api/auth/*` routes:
+```
+if (isIntranet(req.ip))                  → pass through (no 2FA needed)
+if (isDeviceTokenValid(req.cookies[…]))  → pass through (device trusted)
+else                                     → 403 { error: '2FA_REQUIRED' }
+```
+
+### 2FA flow (external access)
+
+```
+1. User enters password → LoginForm → POST /api/auth/check
+   Backend: basic auth ok, IP is external, no valid cookie
+   → 200 { ok: true, twoFactorRequired: true }
+
+2. Frontend shows TwoFactorForm — user clicks "Send code"
+   → POST /api/auth/2fa/send  (basic auth only, no 2FA check)
+   Backend: generates 6-digit code (10-min TTL), sends email via SMTP
+   → 200 { challengeId: "<uuid>" }
+
+3. User enters code → POST /api/auth/2fa/verify { challengeId, code }
+   Backend: validates code, generates device token (random 32-byte hex),
+   writes to 2fa-tokens.json, sets HttpOnly cookie (Max-Age = X days)
+   → 200 { ok: true }
+
+4. Frontend marks as authenticated, renders Dashboard.
+   All subsequent API requests include the cookie automatically (same-origin).
+```
+
+### Intranet access
+
+Requests from an IP matching `INTRANET_CIDR` skip 2FA entirely. Loopback addresses (`127.0.0.1`, `::1`) are always treated as intranet regardless of configuration.
 
 ### Frontend auth flow (`hooks/useAuth.js`)
 
 ```
-sessionStorage key: "dashboard_token"  (value: btoa("user:pass"))
+sessionStorage key: "dashboard_token"  (value: btoa("user:password"))
 ```
 
 1. App mounts → read token from `sessionStorage`
-2. If token present → `GET /api/auth/check` with `Authorization: Basic <token>`
-   - 200 → render dashboard
-   - 401 → clear token, render login form
-3. If no token → render login form
-4. Login form submit → build token, call `/api/auth/check`
-   - 200 → store token, render dashboard
-   - 401 → show "Invalid credentials"
-5. Sign out → `sessionStorage.removeItem("dashboard_token")` → render login form
-6. Any API call returning 401 → auto sign-out (guards against credential changes at runtime)
+2. If token present → `GET /api/auth/check`
+   - 200 `{ twoFactorRequired: false }` → render Dashboard
+   - 200 `{ twoFactorRequired: true }` → render TwoFactorForm
+   - 401 → clear token, render LoginForm
+3. If no token → render LoginForm
+4. LoginForm submit → build token, call `/api/auth/check`
+   - `twoFactorRequired: false` → store token, render Dashboard
+   - `twoFactorRequired: true` → store token, render TwoFactorForm
+   - 401 → show "Invalid password"
+5. TwoFactorForm: send code → enter code → on success call `completeTwoFactor()` → render Dashboard
+6. Sign out → clear `sessionStorage` → render LoginForm
+7. Any API call returning 401 → auto sign-out
+8. Any API call returning 403 `2FA_REQUIRED` → render TwoFactorForm (cookie expired mid-session)
 
 ### Startup validation
 
-On backend startup, if `DASHBOARD_USER` or `DASHBOARD_PASSWORD` is missing or empty, the process exits with a clear error message rather than starting unprotected.
+On backend startup, if `DASHBOARD_PASSWORD` is missing or empty, the process exits with a clear error message rather than starting unprotected.
 
 ---
 
@@ -907,7 +999,12 @@ backend/src/__tests__/
 
 - **Auth on every route**: `express-basic-auth` is applied globally before route registration — no route is accidentally left open.
 - **Timing-safe comparison**: `express-basic-auth` uses constant-time comparison (`safeCompare`) to prevent timing attacks on credentials.
-- **Startup guard**: The backend refuses to start if `DASHBOARD_USER` or `DASHBOARD_PASSWORD` are empty, preventing an accidentally open deployment.
+- **Startup guard**: The backend refuses to start if `DASHBOARD_PASSWORD` is empty, preventing an accidentally open deployment.
+- **Two-factor authentication**: External access (IP outside `INTRANET_CIDR`) requires a time-limited 6-digit email code in addition to the password.
+- **HttpOnly 2FA cookie**: The device trust token is stored in an HttpOnly, SameSite=Strict cookie — inaccessible to JavaScript, not vulnerable to XSS.
+- **Short-lived codes**: 2FA codes expire after 10 minutes; each code is single-use (deleted on first verification attempt).
+- **Persistent device tokens**: Verified device tokens survive backend restarts (stored in `config/2fa-tokens.json`); expired tokens are pruned automatically on read.
+- **Forced TLS for SMTP**: Email is sent with either direct SSL (`SMTP_SECURE=true`, port 465) or forced STARTTLS (`requireTLS: true`, port 587) — opportunistic plaintext is never used.
 - **`sessionStorage` over `localStorage`**: Credentials are cleared automatically when the tab is closed; they are never persisted across browser sessions.
 - **No credential leakage in responses**: The `/api/config` endpoint redacts `ssh_key` values; the `management` block (including host/user) is stripped from `/api/items` responses.
 - **SSH keys mounted read-only**: The backend container cannot modify key files; only `items.yml` is writable.
