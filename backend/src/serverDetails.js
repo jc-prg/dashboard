@@ -10,8 +10,8 @@ const detailsCache = {}
 function buildLinuxCommand() {
   return [
     "awk -F= '/^PRETTY_NAME/{gsub(/\"/,\"\",$2); print \"DISTRO:\"$2}' /etc/os-release",
-    // All real mounts: exclude virtual/pseudo filesystems, output STORAGE:<mount>=<avail>/<total>
-    "df -h | awk 'NR>1 && $1 !~ /^(tmpfs|devtmpfs|udev|none|overlay|shm|cgroupfs|squashfs)/ && $6 ~ /^\\//{printf \"STORAGE:%s=%s/%s\\n\",$6,$4,$2}'",
+    // All real mounts: exclude virtual/pseudo filesystems, output STORAGE:<mount>=<pct%>|<used>
+    "df -h | awk 'NR>1 && $1 !~ /^(tmpfs|devtmpfs|udev|none|overlay|shm|cgroupfs|squashfs)/ && $6 ~ /^\\//{printf \"STORAGE:%s=%s|%s\\n\",$6,$5,$3}'",
     "awk '/^cpu /{u=$2+$4;t=$2+$3+$4+$5;printf \"CPU:%.1f\\n\",(t>0)?u/t*100:0}' /proc/stat",
     "awk '/MemTotal/{t=$2} /MemAvailable/{a=$2} END{printf \"MEM_USED:%dMB\\nMEM_TOTAL:%dMB\\n\",int((t-a)/1024),int(t/1024)}' /proc/meminfo",
     "b=$(awk '/^btime/{print $2}' /proc/stat); echo \"STARTED:$(date -d @$b '+%Y-%m-%d %H:%M:%S' 2>/dev/null || awk -v b=$b 'BEGIN{print strftime(\"%Y-%m-%d %H:%M:%S\",b)}')\"",
@@ -20,8 +20,8 @@ function buildLinuxCommand() {
 
 function buildWindowsCommand() {
   const ps = [
-    // All drives with available space, output STORAGE:<root>=<avail>GB/<total>GB
-    'Get-PSDrive -PSProvider FileSystem | Where-Object {$_.Free -ne $null} | ForEach-Object { $f=[math]::Round($_.Free/1GB,1); $u=[math]::Round($_.Used/1GB,1); Write-Host ("STORAGE:"+$_.Root+"="+$f+"GB/"+($f+$u)+"GB") }',
+    // All drives with available space, output STORAGE:<root>=<pct%>|<used>GB
+    'Get-PSDrive -PSProvider FileSystem | Where-Object {$_.Free -ne $null} | ForEach-Object { $f=[math]::Round($_.Free/1GB,1); $u=[math]::Round($_.Used/1GB,1); $tot=$f+$u; $pct=if($tot -gt 0){[math]::Round($u/$tot*100)}else{0}; Write-Host ("STORAGE:"+$_.Root+"="+$pct+"%|"+$u+"GB") }',
     '$cpu=(Get-WmiObject Win32_Processor|Measure-Object LoadPercentage -Average).Average',
     'Write-Host ("CPU:"+$cpu)',
     '$os=Get-WmiObject Win32_OperatingSystem',
@@ -39,7 +39,7 @@ function parseOutput(stdout) {
   const kv = {}
   const storageList = []
   for (const line of stdout.split('\n')) {
-    // STORAGE:<mount>=<avail>/<total>  (handled before generic split to support paths with colons)
+    // STORAGE:<mount>=<pct%>|<used>  (handled before generic split to support paths with colons)
     if (line.startsWith('STORAGE:')) {
       const rest = line.slice(8)
       const eqIdx = rest.indexOf('=')

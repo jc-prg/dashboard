@@ -74,13 +74,16 @@ export default function ServerDetailsModal({ item, token, onClose }) {
           {data && (
             <div>
               {data.distro && <Row label="OS" value={data.distro} />}
-              {data.storageList?.map(({ mount, value }) => (
-                <Row key={mount} label={`Storage usage ${mount}`} value={value} />
-              ))}
+              {data.storageList?.map(({ mount, value }) => {
+                const [pct, used] = value.split('|')
+                return <Row key={mount} label={`Storage usage ${mount}`} value={`${pct} (${used})`} />
+              })}
               <Row label="CPU usage" value={data.cpuUsage} />
               <Row
                 label="Memory usage"
-                value={data.memUsed && data.memTotal ? `${data.memUsed} / ${data.memTotal}` : null}
+                value={data.memUsed && data.memTotal
+                  ? `${Math.round(parseInt(data.memUsed) / parseInt(data.memTotal) * 100)}% (${data.memUsed})`
+                  : null}
               />
               <Row label="Started" value={data.startedAt} />
             </div>
