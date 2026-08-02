@@ -7,6 +7,7 @@ services:
     volumes:
       - ./config/items.yml:/app/config/items.yml
       - ./config/secrets:/app/config/secrets:ro
+      - ./config/2fa-tokens.json:/app/config/2fa-tokens.json
       - ./.env:/app/.env
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
@@ -19,6 +20,14 @@ services:
       - DASHBOARD_PASSWORD=${DASHBOARD_PASSWORD}
       - RESET_PWD=${RESET_PWD:-0}
       - ENV_FILE=/app/.env
+      - INTRANET_CIDR=${INTRANET_CIDR:-}
+      - TWO_FA_EMAIL=${TWO_FA_EMAIL:-}
+      - TWO_FA_VALIDITY_DAYS=${TWO_FA_VALIDITY_DAYS:-30}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - SMTP_FROM=${SMTP_FROM:-}
     networks:
       - dashboard
 
