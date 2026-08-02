@@ -5,7 +5,6 @@ config/secrets/*
 
 # User config — copy items.yml.sample to items.yml to get started
 config/items.yml
-config/2fa-tokens.json
 
 # Dependencies
 node_modules/
