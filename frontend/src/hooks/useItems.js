@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 
 const POLL_INTERVAL_MS = 30_000
 
-export function useItems(token, onUnauthorized, isOnline = true) {
+export function useItems(token, onUnauthorized, isOnline = true, onTwoFactorRequired) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -14,6 +14,7 @@ export function useItems(token, onUnauthorized, isOnline = true) {
     try {
       const res = await fetch('/api/items', { headers: authHeader })
       if (res.status === 401) { onUnauthorized?.(); return }
+      if (res.status === 403) { onTwoFactorRequired?.(); return }
       if (!res.ok) throw new Error(`Server error ${res.status}`)
       setItems(await res.json())
       setError(null)
@@ -49,6 +50,7 @@ export function useItems(token, onUnauthorized, isOnline = true) {
       headers: authHeader,
     })
     if (res.status === 401) { onUnauthorized?.(); throw new Error('Unauthorized') }
+    if (res.status === 403) { onTwoFactorRequired?.(); throw new Error('2FA required') }
     return res.json()
   }
 
@@ -61,6 +63,7 @@ export function useItems(token, onUnauthorized, isOnline = true) {
       body: JSON.stringify(body),
     })
     if (res.status === 401) { onUnauthorized?.(); throw new Error('Unauthorized') }
+    if (res.status === 403) { onTwoFactorRequired?.(); throw new Error('2FA required') }
     const data = await res.json()
     if (!res.ok) {
       const err = new Error(data.error || `HTTP ${res.status}`)
@@ -92,6 +95,7 @@ export function useItems(token, onUnauthorized, isOnline = true) {
   async function exportConfig() {
     const res = await fetch('/api/items/export', { headers: authHeader })
     if (res.status === 401) { onUnauthorized?.(); throw new Error('Unauthorized') }
+    if (res.status === 403) { onTwoFactorRequired?.(); throw new Error('2FA required') }
     if (!res.ok) throw new Error(`Export failed: HTTP ${res.status}`)
     const data = await res.json()
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })

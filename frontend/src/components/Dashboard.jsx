@@ -13,7 +13,7 @@ import ItemDetailsModal from './ItemDetailsModal'
 
 const CATEGORIES = ['all', 'project', 'server', 'tool']
 
-export default function Dashboard({ token, onLogout, isDark, toggleDark }) {
+export default function Dashboard({ token, onLogout, onTwoFactorRequired, isDark, toggleDark }) {
   const [category, setCategory] = useState('all')
   const [filters, setFilters] = useState({ onlineOnly: false, tags: [] })
   const [modal, setModal] = useState(null) // null | { item: null } | { item: <item> }
@@ -31,7 +31,7 @@ export default function Dashboard({ token, onLogout, isDark, toggleDark }) {
   const {
     items, loading, error, refresh,
     triggerAction, createItem, updateItem, deleteItem, exportConfig, importConfig,
-  } = useItems(token, onLogout, isOnline)
+  } = useItems(token, onLogout, isOnline, onTwoFactorRequired)
 
   const availableTags = [...new Set(items.flatMap(i => i.tags ?? []))].sort()
 

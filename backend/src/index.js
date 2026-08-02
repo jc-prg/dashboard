@@ -1,8 +1,10 @@
 'use strict'
 
 const express = require('express')
+const cookieParser = require('cookie-parser')
 const { maybeResetPassword } = require('./resetPassword')
 const { authMiddleware } = require('./middleware/auth')
+const { twoFactorMiddleware } = require('./middleware/twoFactor')
 const { startHealthCheckScheduler, runAllChecks } = require('./healthcheck')
 const { loadConfig } = require('./config')
 const authRouter = require('./routes/auth')
@@ -34,9 +36,12 @@ try {
 }
 
 const app = express()
+app.set('trust proxy', true) // honour X-Forwarded-For from nginx/Docker
 app.use(express.json())
+app.use(cookieParser())
 
-app.use(auth)
+app.use(auth)               // 1. Basic auth (password) — all routes
+app.use(twoFactorMiddleware()) // 2. 2FA check — skips /api/auth/2fa/* automatically
 
 app.use('/api/auth', authRouter)
 app.use('/api/items', itemsRouter)

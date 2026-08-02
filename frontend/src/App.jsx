@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from './hooks/useAuth'
 import LoginForm from './components/LoginForm'
+import TwoFactorForm from './components/TwoFactorForm'
 import Dashboard from './components/Dashboard'
 
 function useDarkMode() {
@@ -19,12 +20,13 @@ function useDarkMode() {
 }
 
 export default function App() {
-  const { isAuthenticated, checking, token, login, logout } = useAuth()
+  const { isAuthenticated, twoFactorRequired, checking, token, login, logout, completeTwoFactor, requireTwoFactor } = useAuth()
   const [isDark, toggleDark] = useDarkMode()
 
   // Avoid a flash of the login form while we verify a stored token
   if (checking) return null
 
-  if (!isAuthenticated) return <LoginForm onLogin={login} />
-  return <Dashboard token={token} onLogout={logout} isDark={isDark} toggleDark={toggleDark} />
+  if (!isAuthenticated && !twoFactorRequired) return <LoginForm onLogin={login} />
+  if (twoFactorRequired) return <TwoFactorForm token={token} onVerified={completeTwoFactor} />
+  return <Dashboard token={token} onLogout={logout} onTwoFactorRequired={requireTwoFactor} isDark={isDark} toggleDark={toggleDark} />
 }

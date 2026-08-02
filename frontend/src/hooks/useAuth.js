@@ -5,6 +5,7 @@ const STORAGE_KEY = 'dashboard_token'
 export function useAuth() {
   const [token, setToken] = useState(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [twoFactorRequired, setTwoFactorRequired] = useState(false)
   const [checking, setChecking] = useState(true)
 
   useEffect(() => {
@@ -14,29 +15,52 @@ export function useAuth() {
       return
     }
     fetch('/api/auth/check', { headers: { Authorization: `Basic ${stored}` } })
-      .then((res) => {
-        if (res.ok) {
-          setToken(stored)
-          setIsAuthenticated(true)
+      .then(async (res) => {
+        if (!res.ok) { sessionStorage.removeItem(STORAGE_KEY); return }
+        const data = await res.json()
+        setToken(stored)
+        if (data.twoFactorRequired) {
+          setTwoFactorRequired(true)
         } else {
-          sessionStorage.removeItem(STORAGE_KEY)
+          setIsAuthenticated(true)
         }
       })
       .catch(() => sessionStorage.removeItem(STORAGE_KEY))
       .finally(() => setChecking(false))
   }, [])
 
-  function login(newToken) {
+  async function login(newToken) {
     sessionStorage.setItem(STORAGE_KEY, newToken)
     setToken(newToken)
+    try {
+      const res = await fetch('/api/auth/check', { headers: { Authorization: `Basic ${newToken}` } })
+      const data = await res.json()
+      if (data.twoFactorRequired) {
+        setTwoFactorRequired(true)
+      } else {
+        setIsAuthenticated(true)
+      }
+    } catch {
+      setIsAuthenticated(true) // fallback: treat as authenticated if check fails
+    }
+  }
+
+  function completeTwoFactor() {
+    setTwoFactorRequired(false)
     setIsAuthenticated(true)
+  }
+
+  function requireTwoFactor() {
+    setIsAuthenticated(false)
+    setTwoFactorRequired(true)
   }
 
   function logout() {
     sessionStorage.removeItem(STORAGE_KEY)
     setToken(null)
     setIsAuthenticated(false)
+    setTwoFactorRequired(false)
   }
 
-  return { isAuthenticated, checking, token, login, logout }
+  return { isAuthenticated, twoFactorRequired, checking, token, login, logout, completeTwoFactor, requireTwoFactor }
 }
