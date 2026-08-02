@@ -35,6 +35,12 @@ try {
 
 const app = express()
 app.use(express.json())
+
+// Unauthenticated route — must be registered before auth middleware
+app.get('/api/auth/info', (req, res) => {
+  res.json({ user: process.env.DASHBOARD_USER || 'admin' })
+})
+
 app.use(auth)
 
 app.use('/api/auth', authRouter)

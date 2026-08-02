@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function LoginForm({ onLogin }) {
   const [username, setUsername] = useState('')
@@ -6,9 +6,16 @@ export default function LoginForm({ onLogin }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  useEffect(() => {
+    fetch('/api/auth/info')
+      .then((r) => r.json())
+      .then((d) => setUsername(d.user))
+      .catch(() => {})
+  }, [])
+
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!username || !password) return
+    if (!password) return
     setLoading(true)
     setError('')
     const token = btoa(`${username}:${password}`)
@@ -19,7 +26,7 @@ export default function LoginForm({ onLogin }) {
       if (res.ok) {
         onLogin(token)
       } else {
-        setError('Invalid credentials')
+        setError('Invalid password')
       }
     } catch {
       setError('Connection error — is the backend running?')
@@ -37,21 +44,6 @@ export default function LoginForm({ onLogin }) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Username
-            </label>
-            <input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              autoComplete="username"
-              required
-              className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Password
             </label>
@@ -61,6 +53,7 @@ export default function LoginForm({ onLogin }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
+              autoFocus
               required
               className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
