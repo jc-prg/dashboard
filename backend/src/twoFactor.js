@@ -57,7 +57,7 @@ function verifyChallenge(challengeId, code) {
 
 // ─── Device tokens (file-backed) ─────────────────────────────────────────────
 
-const TOKENS_FILE = path.resolve(__dirname, '../../config/2fa-tokens.json')
+const TOKENS_FILE = process.env.TOKENS_FILE || '/app/config/2fa-tokens.json'
 
 function readTokens() {
   try {
