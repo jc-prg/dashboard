@@ -36,6 +36,13 @@ function managementInfo(mgmt) {
 
 function toResponse(item) {
   const s = getStatus(item.id)
+  // If this is an ssh-compose item and its referenced server is offline, mark as srv-off
+  let status = s.status
+  if (item.management?.type === 'ssh-compose' && item.management.server_id) {
+    if (getStatus(item.management.server_id).status === 'offline') {
+      status = 'srv-off'
+    }
+  }
   return {
     id: item.id,
     name: item.name,
@@ -46,7 +53,7 @@ function toResponse(item) {
     tags: item.tags || [],
     actions: item.actions,
     managementInfo: managementInfo(item.management),
-    status: s.status,
+    status,
     statusCode: s.statusCode,
     latencyMs: s.latencyMs,
     checkedAt: s.checkedAt,

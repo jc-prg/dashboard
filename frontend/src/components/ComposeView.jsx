@@ -4,8 +4,10 @@ function StatusDot({ status }) {
   const color =
     status === 'online' ? 'bg-green-500' :
     status === 'offline' ? 'bg-red-500' :
+    status === 'srv-off' ? 'bg-amber-400' :
     'bg-gray-400 dark:bg-gray-500'
-  return <span className={`inline-block w-2.5 h-2.5 rounded-full flex-shrink-0 ${color}`} title={status} />
+  const label = status === 'srv-off' ? 'Srv Off' : status
+  return <span className={`inline-block w-2.5 h-2.5 rounded-full flex-shrink-0 ${color}`} title={label} />
 }
 
 function Spinner() {
@@ -18,9 +20,25 @@ function Spinner() {
 }
 
 export default function ComposeView({ items, onAction, onClose }) {
-  const composeItems = items
+  const allComposeItems = items
     .filter(i => i.managementInfo?.type === 'ssh-compose')
     .slice().sort((a, b) => a.name.localeCompare(b.name))
+
+  const composeItems = allComposeItems.filter(i => i.status !== 'srv-off')
+
+  // Group srv-off items by server ID for the footer summary
+  const srvOffByServer = allComposeItems
+    .filter(i => i.status === 'srv-off')
+    .reduce((acc, i) => {
+      const sid = i.managementInfo.serverId
+      if (!acc[sid]) acc[sid] = []
+      acc[sid].push(i)
+      return acc
+    }, {})
+  const offlineServers = Object.entries(srvOffByServer).map(([sid, srvItems]) => {
+    const server = items.find(i => i.id === sid)
+    return { id: sid, name: server?.name ?? sid, count: srvItems.length }
+  })
 
   // pending[id] = action string while in flight, null/undefined otherwise
   const [pending, setPending] = useState({})
@@ -52,9 +70,13 @@ export default function ComposeView({ items, onAction, onClose }) {
 
         {/* List */}
         <div className="overflow-y-auto flex-1">
-          {composeItems.length === 0 ? (
+          {allComposeItems.length === 0 ? (
             <p className="text-center text-sm text-gray-400 dark:text-gray-500 py-10">
               No compose items configured.
+            </p>
+          ) : composeItems.length === 0 && offlineServers.length > 0 ? (
+            <p className="text-center text-sm text-gray-400 dark:text-gray-500 py-6">
+              All items are unavailable — servers offline.
             </p>
           ) : (
             composeItems.map(item => {
@@ -132,6 +154,21 @@ export default function ComposeView({ items, onAction, onClose }) {
                 </div>
               )
             })
+          )}
+
+          {/* Offline server summary */}
+          {offlineServers.length > 0 && (
+            <div className="border-t border-gray-200 dark:border-gray-700 px-5 py-2">
+              {offlineServers.map(({ id, name, count }) => (
+                <div key={id} className="flex items-center gap-2.5 py-1.5">
+                  <StatusDot status="offline" />
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    <span className="font-medium text-gray-700 dark:text-gray-300">{name}</span>
+                    {' '}— {count} item{count !== 1 ? 's' : ''} unavailable
+                  </span>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </div>
