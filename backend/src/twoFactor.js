@@ -101,10 +101,17 @@ function isDeviceTokenValid(token) {
 // ─── Email ────────────────────────────────────────────────────────────────────
 
 async function sendCodeEmail(code) {
+  const port = parseInt(process.env.SMTP_PORT || '587', 10)
+  // SMTP_SECURE: 'true' = direct SSL (port 465), 'false' = STARTTLS (port 587)
+  // Defaults to auto-detect: true for 465, false otherwise
+  const secure = process.env.SMTP_SECURE !== undefined
+    ? process.env.SMTP_SECURE === 'true'
+    : port === 465
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT || '587', 10),
-    secure: parseInt(process.env.SMTP_PORT || '587', 10) === 465,
+    port,
+    secure,
+    requireTLS: !secure, // force STARTTLS when not using direct SSL
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
