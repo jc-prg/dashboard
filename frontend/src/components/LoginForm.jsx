@@ -1,24 +1,16 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 export default function LoginForm({ onLogin }) {
-  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-
-  useEffect(() => {
-    fetch('/api/auth/info')
-      .then((r) => r.json())
-      .then((d) => setUsername(d.user))
-      .catch(() => {})
-  }, [])
 
   async function handleSubmit(e) {
     e.preventDefault()
     if (!password) return
     setLoading(true)
     setError('')
-    const token = btoa(`${username}:${password}`)
+    const token = btoa(`user:${password}`)
     try {
       const res = await fetch('/api/auth/check', {
         headers: { Authorization: `Basic ${token}` },

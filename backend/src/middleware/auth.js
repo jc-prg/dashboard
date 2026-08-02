@@ -3,15 +3,14 @@
 const basicAuth = require('express-basic-auth')
 
 function authMiddleware() {
-  const user = process.env.DASHBOARD_USER
   const password = process.env.DASHBOARD_PASSWORD
 
-  if (!user || !password) {
-    throw new Error('DASHBOARD_USER and DASHBOARD_PASSWORD environment variables are required')
+  if (!password) {
+    throw new Error('DASHBOARD_PASSWORD environment variable is required')
   }
 
   return basicAuth({
-    users: { [user]: password },
+    authorizer: (_username, pwd) => basicAuth.safeCompare(pwd, password),
     unauthorizedResponse: { error: 'Unauthorized' },
   })
 }
