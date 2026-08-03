@@ -51,7 +51,7 @@ async function checkItem(item, timeoutMs) {
   try {
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), timeoutMs)
-    const res = await fetch(url, { signal: controller.signal, redirect: 'follow' })
+    const res = await fetch(url, { signal: controller.signal, redirect: 'manual' })
     clearTimeout(timer)
     return {
       status: res.status < 400 ? 'online' : 'offline',

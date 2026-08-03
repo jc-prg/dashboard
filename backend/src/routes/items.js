@@ -9,6 +9,11 @@ const { fetchServerDetails } = require('../serverDetails')
 
 const SECRETS_PREFIX = '/app/config/secrets/'
 
+// Strip filesystem paths from error messages before sending to client (L1)
+function sanitizeError(msg) {
+  return (msg || 'Unknown error').replace(/\/[^\s'",]*/g, '[path]')
+}
+
 const router = Router()
 
 // Expose management fields for the edit form, split by type.
@@ -143,7 +148,7 @@ router.get('/:id/details', async (req, res) => {
     const details = await fetchServerDetails(item)
     res.json(details)
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    res.status(500).json({ error: sanitizeError(err.message) })
   }
 })
 
