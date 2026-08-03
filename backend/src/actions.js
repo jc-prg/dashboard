@@ -26,19 +26,20 @@ function buildCommand(mgmt, action) {
 
 /**
  * Build a command that can run locally (without SSH).
- * Uses `docker compose -p <project>` so the host path does not need to be
- * mounted inside the container. The project name is the basename of compose_dir,
- * which matches Docker Compose's default naming convention.
+ * Uses plain `docker` commands with Compose label filters so neither the host
+ * path nor the compose file needs to be accessible inside the backend container.
  */
 function buildLocalCommand(mgmt, action) {
   if (mgmt.type === 'ssh-server' && action === 'reboot') {
     return 'sudo reboot'
   }
   if (mgmt.type === 'ssh-compose' && ['start', 'stop', 'restart'].includes(action)) {
-    const projectName = mgmt.compose_dir.replace(/\/+$/, '').split('/').pop()
-    const dockerAction = action === 'start' ? 'up -d' : action
-    const base = `docker compose -p ${projectName} ${dockerAction}`
-    return mgmt.compose_service ? `${base} ${mgmt.compose_service}` : base
+    const projectName = mgmt.compose_dir.replace(/\/+$/, '').split('/').pop().toLowerCase()
+    const filters = `--filter "label=com.docker.compose.project=${projectName}"`
+      + (mgmt.compose_service ? ` --filter "label=com.docker.compose.service=${mgmt.compose_service}"` : '')
+    if (action === 'stop')    return `docker ps -q ${filters} | xargs -r docker stop`
+    if (action === 'start')   return `docker ps -aq --filter status=exited ${filters} | xargs -r docker start`
+    if (action === 'restart') return `docker ps -q ${filters} | xargs -r docker restart`
   }
   throw new Error(`No command mapping for type="${mgmt.type}" action="${action}"`)
 }

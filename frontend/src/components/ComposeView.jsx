@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 function StatusDot({ status }) {
   const color =
@@ -42,12 +42,49 @@ export default function ComposeView({ items, onAction, onClose }) {
 
   // pending[id] = action string while in flight, null/undefined otherwise
   const [pending, setPending] = useState({})
+  // optimistic[id] = expected status ('online'|'offline') after toggle, until real status confirms
+  const [optimistic, setOptimistic] = useState({})
+  // error[id] = true while showing error indicator (5s after failure)
+  const [errors, setErrors] = useState({})
+  const errorTimers = useRef({})
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => Object.values(errorTimers.current).forEach(clearTimeout)
+  }, [])
+
+  // Clear optimistic state for items whose real status has caught up
+  useEffect(() => {
+    setOptimistic(prev => {
+      const next = { ...prev }
+      let changed = false
+      for (const item of items) {
+        if (next[item.id] && next[item.id] === item.status) {
+          delete next[item.id]
+          changed = true
+        }
+      }
+      return changed ? next : prev
+    })
+  }, [items])
 
   async function handle(id, action) {
     if (pending[id]) return
+    if (action === 'start' || action === 'stop') {
+      setOptimistic(o => ({ ...o, [id]: action === 'start' ? 'online' : 'offline' }))
+    }
     setPending(p => ({ ...p, [id]: action }))
     try {
       await onAction(id, action)
+    } catch {
+      // Revert optimistic state so toggle snaps back
+      setOptimistic(o => { const n = { ...o }; delete n[id]; return n })
+      // Show error indicator for 5s
+      setErrors(e => ({ ...e, [id]: true }))
+      clearTimeout(errorTimers.current[id])
+      errorTimers.current[id] = setTimeout(() => {
+        setErrors(e => { const n = { ...e }; delete n[id]; return n })
+      }, 5000)
     } finally {
       setPending(p => ({ ...p, [id]: null }))
     }
@@ -80,8 +117,11 @@ export default function ComposeView({ items, onAction, onClose }) {
             </p>
           ) : (
             composeItems.map(item => {
-              const isOnline = item.status === 'online'
+              const isOptimistic = !!optimistic[item.id]
+              const effectiveStatus = optimistic[item.id] ?? item.status
+              const isOnline = effectiveStatus === 'online'
               const isBusy = !!pending[item.id]
+              const hasError = !!errors[item.id]
 
               return (
                 <div
@@ -113,14 +153,23 @@ export default function ComposeView({ items, onAction, onClose }) {
                     )}
                   </span>
 
-                  {/* Pending indicator */}
-                  <span className="w-20 flex items-center justify-end gap-1.5 text-xs text-gray-400 dark:text-gray-500">
-                    {isBusy && (
+                  {/* Pending / error indicator */}
+                  <span className="w-20 flex items-center justify-end gap-1.5 text-xs">
+                    {hasError ? (
+                      <>
+                        <svg className="w-3.5 h-3.5 text-red-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10" />
+                          <line x1="15" y1="9" x2="9" y2="15" />
+                          <line x1="9" y1="9" x2="15" y2="15" />
+                        </svg>
+                        <span className="text-red-500">Error</span>
+                      </>
+                    ) : isBusy ? (
                       <>
                         <Spinner />
-                        <span className="capitalize">{pending[item.id]}…</span>
+                        <span className="capitalize text-gray-400 dark:text-gray-500">{pending[item.id]}…</span>
                       </>
-                    )}
+                    ) : null}
                   </span>
 
                   {/* Start / Stop toggle */}
@@ -129,7 +178,9 @@ export default function ComposeView({ items, onAction, onClose }) {
                     disabled={isBusy}
                     title={isOnline ? 'Stop' : 'Start'}
                     className={`relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full transition-colors disabled:opacity-40 focus:outline-none ${
-                      isOnline ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
+                      isOptimistic
+                        ? 'bg-yellow-400'
+                        : isOnline ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
                     }`}
                   >
                     <span

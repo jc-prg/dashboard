@@ -2,7 +2,7 @@
 
 const { Router } = require('express')
 const { loadConfig, MANAGEMENT_ACTIONS } = require('../config')
-const { getStatus } = require('../healthcheck')
+const { getStatus, checkAndCacheItem } = require('../healthcheck')
 const { addItem, updateItem, deleteItem, readItems, importConfig } = require('../configWriter')
 const { append } = require('../auditLog')
 const { fetchServerDetails } = require('../serverDetails')
@@ -113,6 +113,18 @@ router.get('/:id/status', (req, res) => {
     res.json(toResponse(item))
   } catch (err) {
     res.status(500).json({ error: `Config error: ${err.message}` })
+  }
+})
+
+// Trigger a live healthcheck for a single item, update cache, return fresh status
+router.post('/:id/check', async (req, res) => {
+  try {
+    const item = loadConfig().find(i => i.id === req.params.id)
+    if (!item) return res.status(404).json({ error: 'Item not found' })
+    await checkAndCacheItem(item)
+    res.json(toResponse(item))
+  } catch (err) {
+    res.status(500).json({ error: err.message })
   }
 })
 

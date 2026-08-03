@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 const POLL_INTERVAL_MS = 30_000
+const BOOST_INTERVAL_MS = 5_000
+const BOOST_DURATION_MS = 3 * 60 * 1000
 
 export function useItems(token, onUnauthorized, isOnline = true, onTwoFactorRequired) {
   const [items, setItems] = useState([])
@@ -8,7 +10,10 @@ export function useItems(token, onUnauthorized, isOnline = true, onTwoFactorRequ
   const [error, setError] = useState(null)
 
   const authHeader = { Authorization: `Basic ${token}` }
+  const boostIntervalRef = useRef(null)
+  const boostTimeoutRef = useRef(null)
 
+  // Fetch all items from cache — single fast request, used for regular 30s poll
   const fetchItems = useCallback(async () => {
     if (!isOnline) return
     try {
@@ -25,21 +30,57 @@ export function useItems(token, onUnauthorized, isOnline = true, onTwoFactorRequ
     }
   }, [token, isOnline]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Trigger a live healthcheck for one item and patch it into state
+  const liveCheckItem = useCallback(async (id) => {
+    if (!isOnline) return
+    try {
+      const res = await fetch(`/api/items/${id}/check`, { method: 'POST', headers: authHeader })
+      if (res.status === 401) { onUnauthorized?.(); return }
+      if (res.status === 403) { onTwoFactorRequired?.(); return }
+      if (!res.ok) return
+      const fresh = await res.json()
+      setItems(prev => prev.map(i => i.id === id ? fresh : i))
+    } catch {
+      // ignore — stale status remains visible
+    }
+  }, [token, isOnline]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Manual refresh: show cached list immediately, then live-check all in parallel
   const refresh = useCallback(async () => {
     if (!isOnline) return
     try {
-      await fetch('/api/healthcheck/run', { method: 'POST', headers: authHeader })
-    } catch {
-      // ignore — fetchItems will still run
+      const res = await fetch('/api/items', { headers: authHeader })
+      if (res.status === 401) { onUnauthorized?.(); return }
+      if (res.status === 403) { onTwoFactorRequired?.(); return }
+      if (!res.ok) return
+      const data = await res.json()
+      setItems(data)
+      setError(null)
+      data.forEach(item => liveCheckItem(item.id))
+    } catch (err) {
+      setError(err.message)
     }
-    await fetchItems()
-  }, [fetchItems, isOnline]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [liveCheckItem, isOnline]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function startBoostPolling(id) {
+    clearInterval(boostIntervalRef.current)
+    clearTimeout(boostTimeoutRef.current)
+    boostIntervalRef.current = setInterval(() => liveCheckItem(id), BOOST_INTERVAL_MS)
+    boostTimeoutRef.current = setTimeout(() => {
+      clearInterval(boostIntervalRef.current)
+      boostIntervalRef.current = null
+    }, BOOST_DURATION_MS)
+  }
 
   useEffect(() => {
     if (!isOnline) { setError(null); return }
     fetchItems()
     const id = setInterval(fetchItems, POLL_INTERVAL_MS)
-    return () => clearInterval(id)
+    return () => {
+      clearInterval(id)
+      clearInterval(boostIntervalRef.current)
+      clearTimeout(boostTimeoutRef.current)
+    }
   }, [fetchItems, isOnline])
 
   // ─── Remote actions (SSH) ────────────────────────────────────────────────
@@ -51,7 +92,10 @@ export function useItems(token, onUnauthorized, isOnline = true, onTwoFactorRequ
     })
     if (res.status === 401) { onUnauthorized?.(); throw new Error('Unauthorized') }
     if (res.status === 403) { onTwoFactorRequired?.(); throw new Error('2FA required') }
-    return res.json()
+    const data = await res.json()
+    if (!res.ok || data.success === false) throw new Error(data.error || `Action failed (${res.status})`)
+    startBoostPolling(id)
+    return data
   }
 
   // ─── CRUD helpers ────────────────────────────────────────────────────────
