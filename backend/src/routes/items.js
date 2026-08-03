@@ -84,6 +84,11 @@ router.get('/export', (req, res) => {
 })
 
 router.post('/import', (req, res) => {
+  if (req.headers['x-confirm'] !== 'import') {
+    return res.status(400).json({
+      error: 'This action replaces ALL items. Include the header X-Confirm: import to proceed.',
+    })
+  }
   try {
     const { items } = req.body
     if (!Array.isArray(items)) return res.status(400).json({ error: 'Expected { items: [...] }' })

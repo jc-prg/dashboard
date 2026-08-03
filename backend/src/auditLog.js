@@ -1,23 +1,36 @@
 'use strict'
 
-const MAX_ENTRIES = 500
+const fs = require('fs')
 
+const MAX_ENTRIES = 500
+const LOG_FILE = process.env.AUDIT_LOG_FILE || '/app/config/audit.log'
+
+// In-memory log — populated from file on startup, capped at MAX_ENTRIES
 const log = []
 
-/**
- * Append an audit log entry.
- * @param {object} entry
- * @param {string} entry.type        - 'action' | 'create' | 'update' | 'delete'
- * @param {string} entry.itemId
- * @param {string} entry.itemName
- * @param {string} [entry.action]    - for type 'action': the SSH action name
- * @param {boolean} entry.success
- * @param {string} [entry.output]    - stdout from SSH action
- * @param {string} [entry.error]     - error message on failure
- */
+function loadFromFile() {
+  try {
+    const content = fs.readFileSync(LOG_FILE, 'utf8').trim()
+    if (!content) return
+    for (const line of content.split('\n').filter(Boolean).slice(-MAX_ENTRIES)) {
+      try { log.push(JSON.parse(line)) } catch {}
+    }
+  } catch {
+    // File missing or unreadable on first run — that's fine
+  }
+}
+
+loadFromFile()
+
 function append(entry) {
-  log.push({ ...entry, timestamp: new Date().toISOString() })
+  const full = { ...entry, timestamp: new Date().toISOString() }
+  log.push(full)
   if (log.length > MAX_ENTRIES) log.shift()
+  try {
+    fs.appendFileSync(LOG_FILE, JSON.stringify(full) + '\n')
+  } catch (err) {
+    console.error('[auditLog] Failed to write log file:', err.message)
+  }
 }
 
 function getLog() {

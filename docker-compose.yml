@@ -8,7 +8,7 @@ services:
       - ./config/items.yml:/app/config/items.yml
       - ./config/secrets:/app/config/secrets:ro
       - ./config/2fa-tokens.json:/app/config/2fa-tokens.json
-      - ./.env:/app/.env
+      - ./config/audit.log:/app/config/audit.log
       # Docker socket is NOT mounted by default — it grants host-level root access.
       # Only add it if you use LOCAL_HOST_IPS to manage containers on this machine.
       # See docker-compose.local.yml for the override.
@@ -21,7 +21,6 @@ services:
       - DASHBOARD_USER=${DASHBOARD_USER}
       - DASHBOARD_PASSWORD=${DASHBOARD_PASSWORD}
       - RESET_PWD=${RESET_PWD:-0}
-      - ENV_FILE=/app/.env
       - INTRANET_CIDR=${INTRANET_CIDR:-}
       - TWO_FA_EMAIL=${TWO_FA_EMAIL:-}
       - TWO_FA_VALIDITY_DAYS=${TWO_FA_VALIDITY_DAYS:-30}

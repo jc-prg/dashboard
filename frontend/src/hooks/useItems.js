@@ -152,7 +152,19 @@ export function useItems(token, onUnauthorized, isOnline = true, onTwoFactorRequ
   }
 
   async function importConfig(jsonData) {
-    await apiWrite('/api/items/import', 'POST', jsonData)
+    const res = await fetch('/api/items/import', {
+      method: 'POST',
+      headers: { ...authHeader, 'Content-Type': 'application/json', 'X-Confirm': 'import' },
+      body: JSON.stringify(jsonData),
+    })
+    if (res.status === 401) { onUnauthorized?.(); throw new Error('Unauthorized') }
+    if (res.status === 403) { onTwoFactorRequired?.(); throw new Error('2FA required') }
+    const data = await res.json()
+    if (!res.ok) {
+      const err = new Error(data.error || `HTTP ${res.status}`)
+      err.fields = data.fields
+      throw err
+    }
     await fetchItems()
   }
 

@@ -2,6 +2,7 @@
 
 const express = require('express')
 const cookieParser = require('cookie-parser')
+const rateLimit = require('express-rate-limit')
 const { maybeResetPassword } = require('./resetPassword')
 const { authMiddleware } = require('./middleware/auth')
 const { twoFactorMiddleware } = require('./middleware/twoFactor')
@@ -35,13 +36,33 @@ try {
   process.exit(1)
 }
 
+// Rate limiters
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later' },
+})
+
+// Tight limit on 2FA email sending to prevent inbox spam
+const twoFaSendLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many verification code requests, please try again later' },
+})
+
 const app = express()
 app.set('trust proxy', 1) // trust only the nearest proxy (nginx); prevents X-Forwarded-For spoofing
-app.use(express.json())
+app.use(express.json({ limit: '1mb' }))
 app.use(cookieParser())
 
-app.use(auth)               // 1. Basic auth (password) — all routes
-app.use(twoFactorMiddleware()) // 2. 2FA check — skips /api/auth/2fa/* automatically
+app.use(apiLimiter)            // 1. Rate limiting — before auth to cover brute force
+app.use(auth)                  // 2. Basic auth (password) — all routes
+app.use('/api/auth/2fa/send', twoFaSendLimiter) // 3. Extra tight limit for 2FA email
+app.use(twoFactorMiddleware()) // 4. 2FA check — skips /api/auth/2fa/* automatically
 
 app.use('/api/auth', authRouter)
 app.use('/api/items', itemsRouter)
