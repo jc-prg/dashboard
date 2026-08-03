@@ -2,6 +2,8 @@
 .env
 config/secrets/*
 !config/secrets/.gitkeep
+config/certs/*
+!config/certs/.gitkeep
 
 # User config — copy items.yml.sample to items.yml to get started
 config/items.yml

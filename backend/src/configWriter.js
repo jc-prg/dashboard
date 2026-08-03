@@ -54,7 +54,17 @@ function validate(data) {
       errors['management.type'] = `must be one of: ${ALLOWED_MANAGEMENT_TYPES.join(', ')}`
     } else if (mgmt.type === 'ssh-compose') {
       if (!mgmt.server_id) errors['management.server_id'] = 'required'
-      if (!mgmt.compose_dir) errors['management.compose_dir'] = 'required for ssh-compose'
+      if (!mgmt.compose_dir) {
+        errors['management.compose_dir'] = 'required for ssh-compose'
+      } else if (!/^[a-zA-Z0-9/._-]+$/.test(mgmt.compose_dir)) {
+        errors['management.compose_dir'] = 'must only contain letters, numbers, /, ., -, _'
+      }
+      if (mgmt.compose_file && !/^[a-zA-Z0-9/._-]+$/.test(mgmt.compose_file)) {
+        errors['management.compose_file'] = 'must only contain letters, numbers, /, ., -, _'
+      }
+      if (mgmt.compose_service && !/^[a-zA-Z0-9._-]+$/.test(mgmt.compose_service)) {
+        errors['management.compose_service'] = 'must only contain letters, numbers, ., -, _'
+      }
     } else {
       if (!mgmt.host) errors['management.host'] = 'required'
       if (!mgmt.user) errors['management.user'] = 'required'

@@ -1,0 +1,11 @@
+# Override for running actions on the local Docker host (LOCAL_HOST_IPS).
+# Mounts the Docker socket into the backend container — only use this when
+# the dashboard manages containers on the same machine it runs on.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d
+
+services:
+  backend:
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock

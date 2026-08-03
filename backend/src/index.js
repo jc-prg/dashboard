@@ -36,7 +36,7 @@ try {
 }
 
 const app = express()
-app.set('trust proxy', true) // honour X-Forwarded-For from nginx/Docker
+app.set('trust proxy', 1) // trust only the nearest proxy (nginx); prevents X-Forwarded-For spoofing
 app.use(express.json())
 app.use(cookieParser())
 

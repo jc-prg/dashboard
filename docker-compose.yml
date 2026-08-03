@@ -9,7 +9,9 @@ services:
       - ./config/secrets:/app/config/secrets:ro
       - ./config/2fa-tokens.json:/app/config/2fa-tokens.json
       - ./.env:/app/.env
-      - /var/run/docker.sock:/var/run/docker.sock
+      # Docker socket is NOT mounted by default — it grants host-level root access.
+      # Only add it if you use LOCAL_HOST_IPS to manage containers on this machine.
+      # See docker-compose.local.yml for the override.
     environment:
       - PORT=3001
       - CHECK_INTERVAL_SECONDS=60
@@ -36,7 +38,12 @@ services:
     build: ./frontend
     restart: always
     ports:
-      - "${FRONTEND_PORT:-80}:80"
+      - "80:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      # TLS: place cert.pem + key.pem here to enable HTTPS automatically.
+      # Leave the directory empty to run HTTP only (suitable behind a TLS-terminating proxy).
+      - ./config/certs:/etc/nginx/certs:ro
     depends_on:
       - backend
     networks:

@@ -38,6 +38,7 @@ router.post('/2fa/verify', (req, res) => {
   res.cookie('2fa_token', token, {
     httpOnly: true,
     sameSite: 'strict',
+    secure: req.secure, // true when behind TLS proxy (requires trust proxy in index.js)
     maxAge: days * 86400 * 1000,
   })
   res.json({ ok: true })
