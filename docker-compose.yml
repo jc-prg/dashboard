@@ -9,6 +9,8 @@ services:
       - ./config/secrets:/app/config/secrets:ro
       - ./config/2fa-tokens.json:/app/config/2fa-tokens.json
       - ./config/audit.log:/app/config/audit.log
+      - ./config/icon-cache.json:/app/config/icon-cache.json
+      - ./config/settings.json:/app/config/settings.json
       # Docker socket is NOT mounted by default — it grants host-level root access.
       # Only add it if you use LOCAL_HOST_IPS to manage containers on this machine.
       # See docker-compose.local.yml for the override.

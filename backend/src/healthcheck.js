@@ -101,4 +101,4 @@ function startHealthCheckScheduler(intervalMs, timeoutMs) {
   setInterval(() => runAllChecks(timeoutMs), intervalMs)
 }
 
-module.exports = { startHealthCheckScheduler, getStatus, checkItem, checkAndCacheItem, runAllChecks }
+module.exports = { startHealthCheckScheduler, getStatus, checkItem, checkAndCacheItem, runAllChecks, isSafeUrl }

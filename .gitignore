@@ -6,6 +6,8 @@ config/certs/*
 !config/certs/.gitkeep
 config/2fa-tokens.json
 config/audit.log
+config/icon-cache.json
+config/settings.json
 config/.new-password
 
 # User config — copy items.yml.sample to items.yml to get started

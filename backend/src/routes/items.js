@@ -6,6 +6,7 @@ const { getStatus, checkAndCacheItem } = require('../healthcheck')
 const { addItem, updateItem, deleteItem, readItems, importConfig } = require('../configWriter')
 const { append } = require('../auditLog')
 const { fetchServerDetails } = require('../serverDetails')
+const { getIcon, pruneIcons } = require('../icons')
 
 const SECRETS_PREFIX = '/app/config/secrets/'
 
@@ -55,6 +56,8 @@ function toResponse(item) {
     description: item.description || '',
     url: item.url,
     healthCheck: item.health_check || '',
+    iconEmoji: item.icon_emoji || '',
+    iconInvertDark: item.icon_invert_dark === true,
     tags: item.tags || [],
     actions: item.actions,
     managementInfo: managementInfo(item.management),
@@ -111,6 +114,23 @@ router.post('/import', (req, res) => {
 router.get('/', (req, res) => {
   try {
     res.json(loadConfig().map(toResponse))
+  } catch (err) {
+    res.status(500).json({ error: `Config error: ${err.message}` })
+  }
+})
+
+// App icons / favicons for all items as { [id]: dataUri } — one request to stay within the rate limit
+router.get('/icons', async (req, res) => {
+  try {
+    const timeoutMs = parseInt(process.env.REQUEST_TIMEOUT_MS || '5000', 10)
+    const items = loadConfig()
+    pruneIcons(items.map(i => i.id))
+    const icons = await Promise.all(items.map(item => getIcon(item, timeoutMs)))
+    const result = {}
+    items.forEach((item, i) => { if (icons[i]) result[item.id] = icons[i] })
+    // Always revalidate (cheap via ETag/304) so newly found icons show up immediately
+    res.set('Cache-Control', 'private, no-cache')
+    res.json(result)
   } catch (err) {
     res.status(500).json({ error: `Config error: ${err.message}` })
   }

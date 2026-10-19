@@ -10,7 +10,7 @@ function MenuIcon() {
   )
 }
 
-export default function HeaderMenu({ onAddItem, onShowCompose, onShowLog, onExport, onImport, onLogout }) {
+export default function HeaderMenu({ onAddItem, onShowCompose, onShowLog, onExport, onImport, onLogout, iconMode, onToggleIconMode }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -61,6 +61,13 @@ export default function HeaderMenu({ onAddItem, onShowCompose, onShowLog, onExpo
             className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
             Action log
+          </button>
+          <button
+            onClick={() => action(onToggleIconMode)}
+            className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-between"
+          >
+            Icon mode
+            {iconMode && <span className="text-blue-600 dark:text-blue-400">✓</span>}
           </button>
           <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
           <button

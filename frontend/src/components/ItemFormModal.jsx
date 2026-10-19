@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import EmojiPicker from './EmojiPicker'
 
 const SECRETS_PREFIX = '/app/config/secrets/'
 
@@ -14,6 +15,7 @@ function emptyForm() {
   return {
     name: '', id: '', category: 'project', description: '',
     url: '', healthCheck: '', tags: '',
+    iconType: 'favicon', iconEmoji: '', iconInvertDark: false,
     mgmtType: 'none',
     mgmtOs: 'linux',
     mgmtAllowReboot: true,
@@ -33,6 +35,9 @@ function itemToForm(item) {
     url: item.url || '',
     healthCheck: item.healthCheck || '',
     tags: (item.tags || []).join(', '),
+    iconType: item.iconEmoji ? 'emoji' : 'favicon',
+    iconEmoji: item.iconEmoji || '',
+    iconInvertDark: item.iconInvertDark === true,
     mgmtType: m?.type || 'none',
     mgmtOs: m?.os || 'linux',
     mgmtAllowReboot: m?.allowReboot !== false,
@@ -56,6 +61,8 @@ function formToBody(form, isEdit) {
   if (!isEdit && form.id.trim()) body.id = form.id.trim()
   if (form.description.trim()) body.description = form.description.trim()
   if (form.healthCheck.trim()) body.health_check = form.healthCheck.trim()
+  if (form.iconType === 'emoji' && form.iconEmoji) body.icon_emoji = form.iconEmoji
+  if (form.iconType === 'favicon' && form.iconInvertDark) body.icon_invert_dark = true
   body.tags = form.tags.split(',').map(t => t.trim()).filter(Boolean)
 
   if (form.mgmtType !== 'none') {
@@ -91,6 +98,7 @@ function validateForm(form) {
   const errs = {}
   if (!form.name.trim()) errs.name = 'Required'
   if (!form.url.trim() && form.mgmtType !== 'ssh-server') errs.url = 'Required'
+  if (form.iconType === 'emoji' && !form.iconEmoji) errs.iconEmoji = 'Select an emoji'
   if (form.mgmtType !== 'none') {
     if (form.mgmtType === 'ssh-compose') {
       if (!form.mgmtServerId) errs.mgmtServerId = 'Required'
@@ -328,6 +336,43 @@ export default function ItemFormModal({ item, servers = [], onSave, onSaveCopy, 
               onChange={e => set('description', e.target.value)}
               placeholder="Short description shown on the card"
             />
+          </Field>
+
+          {/* Icon */}
+          <Field label="Icon" error={err('iconEmoji') || serverErrors.icon_emoji}>
+            <div className="flex items-center gap-4 mb-2">
+              {[['favicon', 'Favicon'], ['emoji', 'Emoji']].map(([value, label]) => (
+                <label key={value} className="flex items-center gap-1.5 text-xs cursor-pointer text-gray-700 dark:text-gray-300">
+                  <input
+                    type="radio"
+                    name="iconType"
+                    value={value}
+                    checked={form.iconType === value}
+                    onChange={() => set('iconType', value)}
+                  />
+                  {label}
+                </label>
+              ))}
+              {form.iconType === 'emoji' && form.iconEmoji && (
+                <span className="text-xl leading-none" title="Selected emoji">{form.iconEmoji}</span>
+              )}
+            </div>
+            {form.iconType === 'favicon' ? (
+              <div className="flex flex-col gap-2">
+                <p className="text-xs text-gray-400 dark:text-gray-500">Uses the app icon or favicon of the URL, if available.</p>
+                <label className="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={form.iconInvertDark}
+                    onChange={e => set('iconInvertDark', e.target.checked)}
+                    className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                  />
+                  Invert in dark mode
+                </label>
+              </div>
+            ) : (
+              <EmojiPicker value={form.iconEmoji} onChange={v => set('iconEmoji', v)} />
+            )}
           </Field>
 
           {/* Remote management section */}

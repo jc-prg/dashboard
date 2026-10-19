@@ -8,14 +8,19 @@ const HEADER_BG = {
   tool: 'bg-amber-100 dark:bg-amber-950',
 }
 
-export default function ItemCard({ item, onAction, onEdit, onDelete, onDetails, onItemDetails }) {
+export default function ItemCard({ item, icon, onAction, onEdit, onDelete, onDetails, onItemDetails }) {
   const headerBg = HEADER_BG[item.category] ?? 'bg-gray-100'
 
   return (
     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden flex flex-col hover:shadow-sm transition-shadow">
       {/* Colored header */}
       <div className={`${headerBg} px-4 py-3 flex items-center justify-between gap-2`}>
-        <span className="font-medium text-gray-900 dark:text-white text-sm truncate">{item.name}</span>
+        <span className="flex items-center gap-2 min-w-0">
+          {item.iconEmoji
+            ? <span className="w-5 h-5 shrink-0 text-base leading-5 text-center" aria-hidden="true">{item.iconEmoji}</span>
+            : icon && <img src={icon} alt="" className={`w-5 h-5 shrink-0 rounded-sm object-contain ${item.iconInvertDark ? 'dark:invert' : ''}`} />}
+          <span className="font-medium text-gray-900 dark:text-white text-sm truncate">{item.name}</span>
+        </span>
         <span className="sm:hidden"><StatusBadge status={item.status} compact /></span>
         <span className="hidden sm:inline-flex"><StatusBadge status={item.status} /></span>
       </div>

@@ -251,3 +251,25 @@ describe('deleteItem', () => {
     expect(err.statusCode).toBe(404)
   })
 })
+
+describe('validate icon_emoji', () => {
+  const base = { name: 'X', url: 'http://x' }
+  it.each(['🚀', '❤️', '👨‍💻', '🇩🇪', '1️⃣', '🏴󠁧󠁢󠁳󠁣󠁴󠁿'])('accepts %s', (e) => {
+    expect(validate({ ...base, icon_emoji: e })).toBeNull()
+  })
+  it.each(['a', 'hello', '<b>', '🚀x', 123])('rejects %p', (e) => {
+    expect(validate({ ...base, icon_emoji: e })).toEqual({ icon_emoji: 'must be a single emoji' })
+  })
+  it('treats empty icon_emoji as favicon', () => {
+    expect(validate({ ...base, icon_emoji: '' })).toBeNull()
+  })
+})
+
+describe('icon_invert_dark', () => {
+  const { buildItem } = require('../configWriter')
+  it('is only stored for favicon icons', () => {
+    expect(buildItem({ name: 'X', url: 'http://x', icon_invert_dark: true }, 'x').icon_invert_dark).toBe(true)
+    expect(buildItem({ name: 'X', url: 'http://x', icon_emoji: '🚀', icon_invert_dark: true }, 'x').icon_invert_dark).toBeUndefined()
+    expect(buildItem({ name: 'X', url: 'http://x' }, 'x').icon_invert_dark).toBeUndefined()
+  })
+})

@@ -72,3 +72,4 @@ All endpoints require Basic auth. Prefix: `/api`
 - `GET /api/items/:id/status` — poll single item status
 - `POST /api/items/:id/action/:action` — trigger SSH action
 - `GET /api/auth/check` — validate credentials
+- `GET /api/settings`, `PUT /api/settings` — UI settings (e.g. `iconMode`), stored in `config/settings.json`

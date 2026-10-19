@@ -1,7 +1,9 @@
 import { useState, useRef } from 'react'
 import { useItems } from '../hooks/useItems'
 import { useConnectionStatus } from '../hooks/useConnectionStatus'
+import { useSettings } from '../hooks/useSettings'
 import ItemCard from './ItemCard'
+import IconCard from './IconCard'
 import CategoryFilter from './CategoryFilter'
 import FilterMenu from './FilterMenu'
 import HeaderMenu from './HeaderMenu'
@@ -23,13 +25,19 @@ export default function Dashboard({ token, onLogout, onTwoFactorRequired, isDark
   const [showCompose, setShowCompose] = useState(false)
   const [importError, setImportError] = useState(null)
   const importInputRef = useRef(null)
+  const { settings, loaded: settingsLoaded, updateSettings } = useSettings(token)
+  const iconMode = settings.iconMode
+
+  function toggleIconMode() {
+    updateSettings({ iconMode: !iconMode })
+  }
 
   function setFilter(key, value) { setFilters(f => ({ ...f, [key]: value })) }
 
   const isOnline = useConnectionStatus(token)
 
   const {
-    items, loading, error, refresh,
+    items, icons, loading, error, refresh,
     triggerAction, createItem, updateItem, deleteItem, exportConfig, importConfig,
   } = useItems(token, onLogout, isOnline, onTwoFactorRequired)
 
@@ -105,6 +113,8 @@ export default function Dashboard({ token, onLogout, onTwoFactorRequired, isDark
             onExport={exportConfig}
             onImport={() => importInputRef.current?.click()}
             onLogout={onLogout}
+            iconMode={iconMode}
+            onToggleIconMode={toggleIconMode}
           />
           <input
             ref={importInputRef}
@@ -129,12 +139,21 @@ export default function Dashboard({ token, onLogout, onTwoFactorRequired, isDark
           <p className="text-red-500 mt-10 text-center text-sm">Error: {error}</p>
         )}
 
-        {!loading && (
+        {!loading && settingsLoaded && iconMode && (
+          <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+            {filtered.map((item) => (
+              <IconCard key={item.id} item={item} icon={icons[item.id]} onAction={triggerAction} onEdit={openEdit} onDetails={setDetailsItem} />
+            ))}
+          </div>
+        )}
+
+        {!loading && settingsLoaded && !iconMode && (
           <div className="mt-6 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filtered.map((item) => (
               <ItemCard
                 key={item.id}
                 item={item}
+                icon={icons[item.id]}
                 onAction={triggerAction}
                 onEdit={openEdit}
                 onDelete={deleteItem}

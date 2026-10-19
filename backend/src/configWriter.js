@@ -9,6 +9,9 @@ const SECRETS_PREFIX = '/app/config/secrets/'
 const ALLOWED_CATEGORIES = ['project', 'server', 'tool']
 const ALLOWED_MANAGEMENT_TYPES = ['ssh-server', 'ssh-compose']
 
+// A single emoji: pictographs, flags, keycaps, ZWJ sequences, variation selectors, tag sequences
+const EMOJI_RE = /^(?=.*[\p{Extended_Pictographic}\p{Regional_Indicator}\u20e3])[\p{Emoji}\p{Emoji_Component}\u200d\ufe0f\u{e0020}-\u{e007f}]+$/u
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function slugify(name) {
@@ -46,6 +49,12 @@ function validate(data) {
   }
   if (data.id && !/^[a-z0-9-]+$/.test(data.id)) {
     errors.id = 'must contain only lowercase letters, numbers, and hyphens'
+  }
+
+  if (data.icon_emoji != null && data.icon_emoji !== '') {
+    if (typeof data.icon_emoji !== 'string' || data.icon_emoji.length > 32 || !EMOJI_RE.test(data.icon_emoji)) {
+      errors.icon_emoji = 'must be a single emoji'
+    }
   }
 
   const mgmt = data.management
@@ -91,6 +100,8 @@ function buildItem(data, id) {
 
   if (data.description?.trim()) item.description = data.description.trim()
   if (data.health_check?.trim()) item.health_check = data.health_check.trim()
+  if (data.icon_emoji) item.icon_emoji = data.icon_emoji
+  else if (data.icon_invert_dark === true) item.icon_invert_dark = true
 
   const tags = (data.tags || []).map(t => String(t).trim()).filter(Boolean)
   if (tags.length) item.tags = tags
@@ -230,4 +241,4 @@ function importConfig(items) {
   }
 }
 
-module.exports = { addItem, updateItem, deleteItem, generateId, slugify, validate, readItems, importConfig }
+module.exports = { addItem, updateItem, deleteItem, generateId, slugify, validate, buildItem, readItems, importConfig }

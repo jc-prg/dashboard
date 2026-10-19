@@ -48,6 +48,8 @@ function loadConfig() {
       description: item.description || '',
       url: item.url || null,
       health_check: item.health_check || null,
+      icon_emoji: item.icon_emoji || null,
+      icon_invert_dark: item.icon_invert_dark === true,
       tags: item.tags || [],
       management: mgmt,
       actions,

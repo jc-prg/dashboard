@@ -12,6 +12,7 @@ const authRouter = require('./routes/auth')
 const itemsRouter = require('./routes/items')
 const actionsRouter = require('./routes/actions')
 const { getLog } = require('./auditLog')
+const { readSettings, updateSettings } = require('./settings')
 
 maybeResetPassword()
 
@@ -70,6 +71,21 @@ app.use('/api/items', actionsRouter)
 
 app.get('/api/audit-log', (req, res) => {
   res.json(getLog())
+})
+
+// UI settings (e.g. icon mode), persisted so they survive restarts and apply on all devices
+app.get('/api/settings', (req, res) => {
+  res.json(readSettings())
+})
+
+app.put('/api/settings', (req, res) => {
+  try {
+    res.json(updateSettings(req.body))
+  } catch (err) {
+    const body = { error: err.message }
+    if (err.fields) body.fields = err.fields
+    res.status(err.statusCode || 500).json(body)
+  }
 })
 
 app.get('/api/config', (req, res) => {

@@ -8,6 +8,7 @@ export function useItems(token, onUnauthorized, isOnline = true, onTwoFactorRequ
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [icons, setIcons] = useState({})
 
   const authHeader = { Authorization: `Basic ${token}` }
   const boostIntervalRef = useRef(null)
@@ -82,6 +83,18 @@ export function useItems(token, onUnauthorized, isOnline = true, onTwoFactorRequ
       clearTimeout(boostTimeoutRef.current)
     }
   }, [fetchItems, isOnline])
+
+  // App icons / favicons — refetched only when the set of item URLs changes
+  const iconKey = items.map(i => `${i.id}=${i.url ?? ''}`).join('|')
+  useEffect(() => {
+    if (!isOnline || !iconKey) return
+    let cancelled = false
+    fetch('/api/items/icons', { headers: authHeader, cache: 'no-cache' })
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => { if (data && !cancelled) setIcons(data) })
+      .catch(() => { /* icons are optional */ })
+    return () => { cancelled = true }
+  }, [iconKey, token, isOnline]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Remote actions (SSH) ────────────────────────────────────────────────
 
@@ -168,5 +181,5 @@ export function useItems(token, onUnauthorized, isOnline = true, onTwoFactorRequ
     await fetchItems()
   }
 
-  return { items, loading, error, refresh, triggerAction, createItem, updateItem, deleteItem, exportConfig, importConfig }
+  return { items, icons, loading, error, refresh, triggerAction, createItem, updateItem, deleteItem, exportConfig, importConfig }
 }
