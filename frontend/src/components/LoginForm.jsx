@@ -17,6 +17,8 @@ export default function LoginForm({ onLogin }) {
       })
       if (res.ok) {
         onLogin(token)
+      } else if (res.status === 429) {
+        setError('Too many failed attempts — please try again later')
       } else {
         setError('Invalid password')
       }

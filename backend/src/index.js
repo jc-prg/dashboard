@@ -38,9 +38,13 @@ try {
 }
 
 // Rate limiters
+// Only failed requests (status >= 400, e.g. wrong password) count. The dashboard polls
+// several endpoints every few seconds, so counting successful requests would lock out
+// a logged-in user after ~15 minutes and then block logins for the rest of the window.
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 200,
+  skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please try again later' },

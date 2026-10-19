@@ -16,7 +16,10 @@ export function useAuth() {
     }
     fetch('/api/auth/check', { headers: { Authorization: `Basic ${stored}` } })
       .then(async (res) => {
-        if (!res.ok) { sessionStorage.removeItem(STORAGE_KEY); return }
+        // Only a rejected password invalidates the stored token; keep it on
+        // transient errors (rate limit, backend restart) so a reload doesn't log out
+        if (res.status === 401) { sessionStorage.removeItem(STORAGE_KEY); return }
+        if (!res.ok) return
         const data = await res.json()
         setToken(stored)
         if (data.twoFactorRequired) {
@@ -25,7 +28,7 @@ export function useAuth() {
           setIsAuthenticated(true)
         }
       })
-      .catch(() => sessionStorage.removeItem(STORAGE_KEY))
+      .catch(() => { /* backend unreachable — keep token, show login */ })
       .finally(() => setChecking(false))
   }, [])
 
