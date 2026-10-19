@@ -47,8 +47,11 @@ function BigIcon({ item, icon }) {
 
 const BUTTON_CLASS = 'border border-gray-300 dark:border-gray-600 rounded p-1 text-gray-500 dark:text-gray-400 hover:border-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center justify-center'
 
-export default function IconCard({ item, icon, onAction, onEdit, onDetails }) {
+const ICON_LINK_CLASS = 'h-16 mb-2 flex items-center justify-center'
+
+export default function IconCard({ item, icon, onAction, onEdit, onDetails, onItemDetails }) {
   const iconBlock = <BigIcon item={item} icon={icon} />
+  const hasServerDetails = item.managementInfo?.type === 'ssh-server'
 
   return (
     <div className={`relative ${TILE_BG[item.category] ?? 'bg-gray-50 dark:bg-gray-950/50'} border border-gray-200 dark:border-gray-700 rounded-lg p-3 pt-4 flex flex-col items-center gap-2 hover:shadow-sm transition-shadow`}>
@@ -57,39 +60,32 @@ export default function IconCard({ item, icon, onAction, onEdit, onDetails }) {
         <StatusBadge status={item.status} compact />
       </span>
 
-      {/* Large icon — clicking it opens the app */}
-      {item.url ? (
-        <a href={item.url} target="_blank" rel="noopener noreferrer" title={`Open ${item.name}`} className="h-16 mb-2 flex items-center justify-center">
+      {/* Large icon — opens server details if available, otherwise the app */}
+      {hasServerDetails ? (
+        <button onClick={() => onDetails(item)} title="Server details" className={ICON_LINK_CLASS}>
+          {iconBlock}
+        </button>
+      ) : item.url ? (
+        <a href={item.url} target="_blank" rel="noopener noreferrer" title={`Open ${item.name}`} className={ICON_LINK_CLASS}>
           {iconBlock}
         </a>
       ) : (
-        <span className="h-16 mb-2 flex items-center justify-center">{iconBlock}</span>
+        <span className={ICON_LINK_CLASS}>{iconBlock}</span>
       )}
 
       <span className="w-full text-center text-xs font-medium text-gray-900 dark:text-white truncate" title={item.name}>
         {item.name}
       </span>
 
-      {/* Open, details, SSH actions, edit */}
+      {/* Details, SSH actions, edit */}
       <div className="flex flex-wrap items-center justify-center gap-1">
-        {item.url && (
-          <a href={item.url} target="_blank" rel="noopener noreferrer" title="Open" className={BUTTON_CLASS}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
-              <polyline points="15 3 21 3 21 9" />
-              <line x1="10" y1="14" x2="21" y2="3" />
-            </svg>
-          </a>
-        )}
-        {item.managementInfo?.type === 'ssh-server' && (
-          <button onClick={() => onDetails(item)} title="Server details" className={BUTTON_CLASS}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="16" x2="12" y2="12" />
-              <line x1="12" y1="8" x2="12.01" y2="8" />
-            </svg>
-          </button>
-        )}
+        <button onClick={() => onItemDetails(item)} title="Details" className={BUTTON_CLASS}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="16" x2="12" y2="12" />
+            <line x1="12" y1="8" x2="12.01" y2="8" />
+          </svg>
+        </button>
         {item.actions?.map((action) => (
           <ActionButton key={action} item={item} action={action} onAction={onAction} />
         ))}

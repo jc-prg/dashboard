@@ -143,7 +143,7 @@ export default function Dashboard({ token, onLogout, onTwoFactorRequired, isDark
         {!loading && settingsLoaded && iconMode && (
           <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-3">
             {filtered.map((item) => (
-              <IconCard key={item.id} item={item} icon={icons[item.id]} onAction={triggerAction} onEdit={openEdit} onDetails={setDetailsItem} />
+              <IconCard key={item.id} item={item} icon={icons[item.id]} onAction={triggerAction} onEdit={openEdit} onDetails={setDetailsItem} onItemDetails={setItemDetailsItem} />
             ))}
           </div>
         )}
