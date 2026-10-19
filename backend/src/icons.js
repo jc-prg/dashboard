@@ -3,7 +3,7 @@
 const fs = require('fs')
 const { isSafeUrl } = require('./healthcheck')
 
-const ICON_CACHE_FILE = process.env.ICON_CACHE_FILE || '/app/config/icon-cache.json'
+const ICON_CACHE_FILE = process.env.ICON_CACHE_FILE || '/app/config/state/icon-cache.json'
 
 const MAX_HTML_BYTES = 1024 * 1024
 const MAX_ICON_BYTES = 1024 * 1024  // PWA app icons (512×512 PNG) are often several hundred KB

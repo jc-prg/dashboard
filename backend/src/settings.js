@@ -2,7 +2,7 @@
 
 const fs = require('fs')
 
-const SETTINGS_FILE = process.env.SETTINGS_FILE || '/app/config/settings.json'
+const SETTINGS_FILE = process.env.SETTINGS_FILE || '/app/config/state/settings.json'
 
 // Allowed UI settings with their defaults and validators
 const SCHEMA = {

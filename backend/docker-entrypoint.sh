@@ -17,7 +17,7 @@ ensure_file() {
 
 ensure_file "${TOKENS_FILE:-/app/config/2fa-tokens.json}" '{}'
 ensure_file "${AUDIT_LOG_FILE:-/app/config/audit.log}"    ''
-ensure_file "${ICON_CACHE_FILE:-/app/config/icon-cache.json}" '{}'
-ensure_file "${SETTINGS_FILE:-/app/config/settings.json}" '{}'
+# Runtime state (icon cache, UI settings) lives in a mounted directory; files are created on first write
+mkdir -p /app/config/state
 
 exec "$@"
