@@ -108,6 +108,7 @@ export default function Dashboard({ token, onLogout, onTwoFactorRequired, isDark
           </button>
           <HeaderMenu
             onAddItem={openAdd}
+            onRefreshStatus={refresh}
             onShowCompose={() => setShowCompose(true)}
             onShowLog={() => setShowLog(true)}
             onExport={exportConfig}

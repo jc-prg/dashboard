@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 const POLL_INTERVAL_MS = 30_000
 const BOOST_INTERVAL_MS = 5_000
 const BOOST_DURATION_MS = 3 * 60 * 1000
+const POST_SAVE_CHECK_DELAY_MS = 20_000
 
 export function useItems(token, onUnauthorized, isOnline = true, onTwoFactorRequired) {
   const [items, setItems] = useState([])
@@ -13,6 +14,7 @@ export function useItems(token, onUnauthorized, isOnline = true, onTwoFactorRequ
   const authHeader = { Authorization: `Basic ${token}` }
   const boostIntervalRef = useRef(null)
   const boostTimeoutRef = useRef(null)
+  const postSaveTimeoutsRef = useRef(new Map())
 
   // Fetch all items from cache — single fast request, used for regular 30s poll
   const fetchItems = useCallback(async () => {
@@ -73,6 +75,16 @@ export function useItems(token, onUnauthorized, isOnline = true, onTwoFactorRequ
     }, BOOST_DURATION_MS)
   }
 
+  // Re-check an item's status once its (possibly changed) settings have taken effect
+  function schedulePostSaveCheck(id) {
+    const timeouts = postSaveTimeoutsRef.current
+    clearTimeout(timeouts.get(id))
+    timeouts.set(id, setTimeout(() => {
+      timeouts.delete(id)
+      liveCheckItem(id)
+    }, POST_SAVE_CHECK_DELAY_MS))
+  }
+
   useEffect(() => {
     if (!isOnline) { setError(null); return }
     fetchItems()
@@ -83,6 +95,14 @@ export function useItems(token, onUnauthorized, isOnline = true, onTwoFactorRequ
       clearTimeout(boostTimeoutRef.current)
     }
   }, [fetchItems, isOnline])
+
+  useEffect(() => {
+    const timeouts = postSaveTimeoutsRef.current
+    return () => {
+      timeouts.forEach(clearTimeout)
+      timeouts.clear()
+    }
+  }, [])
 
   // App icons / favicons — refetched only when the set of item URLs changes
   const iconKey = items.map(i => `${i.id}=${i.url ?? ''}`).join('|')
@@ -133,12 +153,14 @@ export function useItems(token, onUnauthorized, isOnline = true, onTwoFactorRequ
   async function createItem(body) {
     const item = await apiWrite('/api/items', 'POST', body)
     await fetchItems()
+    schedulePostSaveCheck(item.id)
     return item
   }
 
   async function updateItem(id, body) {
     const item = await apiWrite(`/api/items/${id}`, 'PUT', body)
     await fetchItems()
+    schedulePostSaveCheck(item.id ?? id)
     return item
   }
 
