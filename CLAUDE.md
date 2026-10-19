@@ -7,10 +7,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 The app runs via Docker Compose. Copy `.env.example` to `.env` and fill in credentials before starting.
 
 ```bash
-docker compose up -d           # start everything
-docker compose restart backend # restart backend after backend changes
-docker compose restart frontend # rebuild/restart frontend after frontend changes
+docker compose up -d                    # start everything
+docker compose up -d --build backend    # rebuild/restart backend after backend changes
+docker compose up -d --build frontend   # rebuild/restart frontend after frontend changes
 ```
+
+Source code is copied into the images at build time (not volume-mounted), so `docker compose restart` does not pick up code changes — always rebuild with `--build`. Only `config/` is mounted at runtime.
 
 Frontend is served on port 80. Backend runs on port 3001 (internal only).
 
