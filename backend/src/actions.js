@@ -4,6 +4,7 @@ const { runSshCommand } = require('./ssh')
 const { isLocalHost, runLocalCommand } = require('./localExec')
 
 const SSH_CONNECT_TIMEOUT_MS = parseInt(process.env.SSH_CONNECT_TIMEOUT_MS || '8000', 10)
+const ACTION_TIMEOUT_MS = parseInt(process.env.ACTION_TIMEOUT_MS || '600000', 10)
 
 const ALLOWED_ACTIONS = {
   'ssh-server': ['reboot'],
@@ -92,7 +93,7 @@ async function executeAction(item, action, allItems) {
     result = await runLocalCommand(localCmd)
   } else {
     const command = buildCommand(mgmt, action)
-    result = await runSshCommand({ ...sshCreds, command, timeoutMs: SSH_CONNECT_TIMEOUT_MS })
+    result = await runSshCommand({ ...sshCreds, command, timeoutMs: SSH_CONNECT_TIMEOUT_MS, commandTimeoutMs: ACTION_TIMEOUT_MS })
   }
 
   return {

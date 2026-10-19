@@ -92,6 +92,33 @@ describe('useItems', () => {
     expect(response).toEqual(actionResult)
   })
 
+  it('triggerAction polls a running job until it has finished', async () => {
+    const running = { jobId: 'j1', id: 'foo', action: 'start', status: 'running' }
+    const done = { ...running, status: 'done', success: true, output: 'started' }
+    server.use(
+      http.post('/api/items/foo/action/start', () => HttpResponse.json(running, { status: 202 })),
+      http.get('/api/items/foo/action-jobs/j1', () => HttpResponse.json(done)),
+    )
+    const { result } = renderUseItems()
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    let response
+    await act(async () => { response = await result.current.triggerAction('foo', 'start') })
+    expect(response).toEqual(done)
+  })
+
+  it('triggerAction throws when the job finishes unsuccessfully', async () => {
+    const running = { jobId: 'j2', id: 'foo', action: 'stop', status: 'running' }
+    server.use(
+      http.post('/api/items/foo/action/stop', () => HttpResponse.json(running, { status: 202 })),
+      http.get('/api/items/foo/action-jobs/j2', () => HttpResponse.json({ ...running, status: 'done', success: false, error: 'boom' })),
+    )
+    const { result } = renderUseItems()
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    await act(async () => {
+      await expect(result.current.triggerAction('foo', 'stop')).rejects.toThrow('boom')
+    })
+  })
+
   it('createItem throws with field errors on 400 response', async () => {
     server.use(
       http.post('/api/items', () => HttpResponse.json({ error: 'Validation failed', fields: { name: 'required' } }, { status: 400 })),

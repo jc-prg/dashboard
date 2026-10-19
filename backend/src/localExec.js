@@ -3,7 +3,7 @@
 const { exec } = require('child_process')
 const os = require('os')
 
-const LOCAL_EXEC_TIMEOUT_MS = parseInt(process.env.LOCAL_EXEC_TIMEOUT_MS || '15000', 10)
+const LOCAL_EXEC_TIMEOUT_MS = parseInt(process.env.LOCAL_EXEC_TIMEOUT_MS || process.env.ACTION_TIMEOUT_MS || '600000', 10)
 
 /**
  * Returns true if `host` refers to this machine.

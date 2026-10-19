@@ -4,6 +4,8 @@ const POLL_INTERVAL_MS = 30_000
 const BOOST_INTERVAL_MS = 5_000
 const BOOST_DURATION_MS = 3 * 60 * 1000
 const POST_SAVE_CHECK_DELAY_MS = 20_000
+const ACTION_POLL_INTERVAL_MS = 2_000
+const ACTION_MAX_POLL_ERRORS = 5
 
 export function useItems(token, onUnauthorized, isOnline = true, onTwoFactorRequired) {
   const [items, setItems] = useState([])
@@ -118,6 +120,8 @@ export function useItems(token, onUnauthorized, isOnline = true, onTwoFactorRequ
 
   // ─── Remote actions (SSH) ────────────────────────────────────────────────
 
+  // The backend runs actions as background jobs (start/stop can take minutes):
+  // the POST returns 202 with a jobId, then we poll until the job has finished.
   async function triggerAction(id, action) {
     const res = await fetch(`/api/items/${id}/action/${action}`, {
       method: 'POST',
@@ -125,9 +129,29 @@ export function useItems(token, onUnauthorized, isOnline = true, onTwoFactorRequ
     })
     if (res.status === 401) { onUnauthorized?.(); throw new Error('Unauthorized') }
     if (res.status === 403) { onTwoFactorRequired?.(); throw new Error('2FA required') }
-    const data = await res.json()
+    let data = await res.json()
     if (!res.ok || data.success === false) throw new Error(data.error || `Action failed (${res.status})`)
     startBoostPolling(id)
+
+    let pollErrors = 0
+    while (data.status === 'running') {
+      await new Promise(resolve => setTimeout(resolve, ACTION_POLL_INTERVAL_MS))
+      try {
+        const pollRes = await fetch(`/api/items/${id}/action-jobs/${data.jobId}`, { headers: authHeader })
+        if (pollRes.status === 401) { onUnauthorized?.(); throw new Error('Unauthorized') }
+        if (pollRes.status === 403) { onTwoFactorRequired?.(); throw new Error('2FA required') }
+        if (pollRes.status === 404) throw new Error('Action status lost (backend restarted?)')
+        if (!pollRes.ok) throw new Error(`Status check failed (${pollRes.status})`)
+        data = await pollRes.json()
+        pollErrors = 0
+      } catch (err) {
+        // Tolerate brief network hiccups while the action keeps running on the server
+        if (err instanceof TypeError && ++pollErrors < ACTION_MAX_POLL_ERRORS) continue
+        throw err
+      }
+    }
+
+    if (data.success === false) throw new Error(data.error || 'Action failed')
     return data
   }
 

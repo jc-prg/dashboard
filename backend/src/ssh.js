@@ -3,7 +3,9 @@
 const { Client } = require('ssh2')
 const fs = require('fs')
 
-function runSshCommand({ host, port = 22, user, keyPath, command, timeoutMs = 8000 }) {
+// timeoutMs limits connection setup only; commandTimeoutMs limits the command itself
+// (docker compose up/stop can take minutes, e.g. image pulls or slow shutdowns).
+function runSshCommand({ host, port = 22, user, keyPath, command, timeoutMs = 8000, commandTimeoutMs = 10 * 60 * 1000 }) {
   return new Promise((resolve, reject) => {
     const conn = new Client()
     let settled = false
@@ -16,13 +18,18 @@ function runSshCommand({ host, port = 22, user, keyPath, command, timeoutMs = 80
       fn(value)
     }
 
-    const timer = setTimeout(() => {
+    let timer = setTimeout(() => {
       try { conn.destroy() } catch {}
       settle(reject, new Error('SSH connection timeout'))
     }, timeoutMs)
 
     conn
       .on('ready', () => {
+        clearTimeout(timer)
+        timer = setTimeout(() => {
+          try { conn.destroy() } catch {}
+          settle(reject, new Error('SSH command timeout'))
+        }, commandTimeoutMs)
         conn.exec(command, (err, stream) => {
           if (err) return settle(reject, err)
 
