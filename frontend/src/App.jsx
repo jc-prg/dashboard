@@ -13,6 +13,10 @@ function useDarkMode() {
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark)
+    // Match the browser/status bar color to the header (bg-white / dark:bg-gray-800)
+    document.querySelectorAll('meta[name="theme-color"]').forEach(meta => {
+      meta.setAttribute('content', isDark ? '#1f2937' : '#ffffff')
+    })
     localStorage.setItem('theme', isDark ? 'dark' : 'light')
   }, [isDark])
 

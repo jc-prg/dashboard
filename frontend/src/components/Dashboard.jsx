@@ -78,13 +78,13 @@ export default function Dashboard({ token, onLogout, onTwoFactorRequired, isDark
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {!isOnline && (
-        <div className="fixed inset-x-0 top-0 z-50 flex items-center justify-center gap-2 bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-md">
+        <div className="safe-top fixed inset-x-0 top-0 z-50 flex items-center justify-center gap-2 bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-md">
           <span className="inline-block h-2 w-2 rounded-full bg-white opacity-80 animate-pulse" />
           Backend unreachable — retrying…
         </div>
       )}
       {importError && (
-        <div className="fixed inset-x-0 top-0 z-50 flex items-center justify-center gap-3 bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-md">
+        <div className="safe-top fixed inset-x-0 top-0 z-50 flex items-center justify-center gap-3 bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-md">
           Import failed: {importError}
           <button onClick={() => setImportError(null)} className="underline">Dismiss</button>
         </div>
