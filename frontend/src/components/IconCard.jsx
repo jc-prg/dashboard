@@ -1,11 +1,20 @@
 import StatusBadge from './StatusBadge'
 import ActionButton from './ActionButton'
 
-// Fallback when an item has neither emoji nor favicon: first letter on the category color
+// Tile background: subtle category tint — near white in light mode, near black in dark mode
+// (950 at half opacity blends with the gray-900 page background)
+const TILE_BG = {
+  project: 'bg-blue-50 dark:bg-blue-950/50',
+  server: 'bg-purple-50 dark:bg-purple-950/50',
+  tool: 'bg-amber-50 dark:bg-amber-950/50',
+}
+
+// Fallback when an item has neither emoji nor favicon: first letter in the category color.
+// The tile itself already carries the category background, so the letter box is lightened.
 const FALLBACK_BG = {
-  project: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
-  server: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300',
-  tool: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
+  project: 'bg-white/70 text-blue-700 dark:bg-gray-900/40 dark:text-blue-300',
+  server: 'bg-white/70 text-purple-700 dark:bg-gray-900/40 dark:text-purple-300',
+  tool: 'bg-white/70 text-amber-700 dark:bg-gray-900/40 dark:text-amber-300',
 }
 
 const STATUS_LABEL = {
@@ -42,7 +51,7 @@ export default function IconCard({ item, icon, onAction, onEdit, onDetails }) {
   const iconBlock = <BigIcon item={item} icon={icon} />
 
   return (
-    <div className="relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 pt-4 flex flex-col items-center gap-2 hover:shadow-sm transition-shadow">
+    <div className={`relative ${TILE_BG[item.category] ?? 'bg-gray-50 dark:bg-gray-950/50'} border border-gray-200 dark:border-gray-700 rounded-lg p-3 pt-4 flex flex-col items-center gap-2 hover:shadow-sm transition-shadow`}>
       {/* Online status in the corner */}
       <span className="absolute top-2 right-2" title={STATUS_LABEL[item.status] ?? item.status}>
         <StatusBadge status={item.status} compact />
