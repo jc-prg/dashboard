@@ -119,11 +119,11 @@ describe('loadConfig', () => {
     expect(loadConfig()[0].actions).toEqual(['reboot'])
   })
 
-  it('assigns restart action to ssh-compose items', () => {
+  it('assigns start/stop/restart actions to ssh-compose items', () => {
     setItems([
       { id: 'srv', name: 'Server', management: { type: 'ssh-server', host: 'h', user: 'u', ssh_key: 'k' } },
       { id: 'app', name: 'App', url: 'http://app', management: { type: 'ssh-compose', server_id: 'srv', compose_dir: '/app' } },
     ])
-    expect(loadConfig()[1].actions).toEqual(['restart'])
+    expect(loadConfig()[1].actions).toEqual(['start', 'stop', 'restart'])
   })
 })
