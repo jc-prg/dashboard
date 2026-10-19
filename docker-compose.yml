@@ -54,3 +54,7 @@ services:
 networks:
   dashboard:
     name: dashboard_net
+    driver_opts:
+      # Fixed bridge name so the host firewall can allow it, e.g. on NixOS:
+      # networking.firewall.interfaces."br-dashboard".allowedTCPPorts = [ ... ];
+      com.docker.network.bridge.name: br-dashboard
