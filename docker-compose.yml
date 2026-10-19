@@ -39,7 +39,7 @@ services:
     build: ./frontend
     restart: always
     ports:
-      - "80:80"
+      - "${FRONTEND_PORT:-80}:80"
       - "${HTTPS_PORT:-443}:443"
     volumes:
       # TLS: place cert.pem + key.pem here to enable HTTPS automatically.
