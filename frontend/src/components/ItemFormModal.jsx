@@ -21,6 +21,8 @@ function emptyForm() {
     mgmtAllowReboot: true,
     mgmtServerId: '',
     mgmtHost: '', mgmtPort: '22', mgmtUser: '', mgmtSshKey: '',
+    mgmtCheckInterval: '60', mgmtCpuWarning: '', mgmtMemoryWarning: '',
+    mgmtStorageWarnings: [],
     mgmtComposeDir: '', mgmtComposeFile: '', mgmtComposeService: '',
   }
 }
@@ -46,6 +48,10 @@ function itemToForm(item) {
     mgmtPort: String(m?.port || 22),
     mgmtUser: m?.user || '',
     mgmtSshKey: m?.sshKey || '',
+    mgmtCheckInterval: String(m?.checkInterval || 60),
+    mgmtCpuWarning: m?.cpuWarning != null ? String(m.cpuWarning) : '',
+    mgmtMemoryWarning: m?.memoryWarning != null ? String(m.memoryWarning) : '',
+    mgmtStorageWarnings: (m?.storageWarnings || []).map(w => ({ mount: w.mount, percent: String(w.percent) })),
     mgmtComposeDir: m?.composeDir || '',
     mgmtComposeFile: m?.composeFile || '',
     mgmtComposeService: m?.composeService || '',
@@ -87,11 +93,41 @@ function formToBody(form, isEdit) {
         ssh_key: SECRETS_PREFIX + form.mgmtSshKey.trim(),
         os: form.mgmtOs || 'linux',
         allow_reboot: form.mgmtAllowReboot,
+        storage_warnings: filledStorageWarnings(form).map(w => ({
+          mount: w.mount.trim(),
+          percent: Number(w.percent),
+        })),
+        check_interval: Number(form.mgmtCheckInterval) || 60,
       }
+      if (form.mgmtCpuWarning.trim()) body.management.cpu_warning = Number(form.mgmtCpuWarning)
+      if (form.mgmtMemoryWarning.trim()) body.management.memory_warning = Number(form.mgmtMemoryWarning)
     }
   }
 
   return body
+}
+
+function isIntBetween(value, min, max) {
+  const n = Number(value)
+  return String(value).trim() !== '' && Number.isInteger(n) && n >= min && n <= max
+}
+
+// Rows left completely empty are ignored instead of failing validation
+function filledStorageWarnings(form) {
+  return form.mgmtStorageWarnings.filter(w => w.mount.trim() || String(w.percent).trim())
+}
+
+function validateStorageWarnings(form) {
+  const seen = new Set()
+  for (const w of filledStorageWarnings(form)) {
+    const mount = w.mount.trim()
+    if (!mount) return 'Enter a mount point'
+    if (seen.has(mount)) return `${mount} is listed twice`
+    seen.add(mount)
+    const pct = Number(w.percent)
+    if (!Number.isInteger(pct) || pct < 1 || pct > 100) return `Percentage for ${mount} must be 1–100`
+  }
+  return null
 }
 
 function validateForm(form) {
@@ -107,6 +143,12 @@ function validateForm(form) {
       if (!form.mgmtHost.trim()) errs.mgmtHost = 'Required'
       if (!form.mgmtUser.trim()) errs.mgmtUser = 'Required'
       if (!form.mgmtSshKey.trim()) errs.mgmtSshKey = 'Required'
+      const swErr = validateStorageWarnings(form)
+      if (swErr) errs.mgmtStorageWarnings = swErr
+      for (const key of ['mgmtCpuWarning', 'mgmtMemoryWarning']) {
+        if (form[key].trim() && !isIntBetween(form[key], 1, 100)) errs[key] = '1–100 or empty'
+      }
+      if (!isIntBetween(form.mgmtCheckInterval, 10, 86400)) errs.mgmtCheckInterval = '10–86400 seconds'
     }
   }
   return Object.keys(errs).length ? errs : null
@@ -175,13 +217,107 @@ function SshKeyInfoPopover() {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function ItemFormModal({ item, servers = [], onSave, onSaveCopy, onClose }) {
+// Per-mountpoint storage warning thresholds. Mount points reported by the server
+// (existing items only) are offered as quick-add chips; any mount can be typed in.
+function StorageWarningsEditor({ rows, onChange, knownMounts, error }) {
+  // inputClass sets w-full, which would override the widths below and squash the mount input
+  const rowInput = inputClass(false).replace('w-full ', '')
+  const configured = new Set(rows.map(r => r.mount.trim()))
+  const suggestions = knownMounts.filter(m => !configured.has(m))
+
+  function update(idx, key, value) {
+    onChange(rows.map((r, i) => (i === idx ? { ...r, [key]: value } : r)))
+  }
+
+  return (
+    <Field label="Storage warnings" error={error}>
+      <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">
+        Show a warning when a mount point's usage reaches the given percentage. Mount points without an entry are not checked.
+      </p>
+      {rows.length > 0 && (
+        <div className="flex flex-col gap-1.5 mb-2">
+          {rows.map((row, idx) => (
+            <div key={idx} className="flex items-center gap-2">
+              <input
+                className={`${rowInput} flex-1 min-w-0`}
+                value={row.mount}
+                onChange={e => update(idx, 'mount', e.target.value)}
+                placeholder="/  or  C:\"
+                list="storage-mounts"
+                aria-label="Mount point"
+              />
+              <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">warn at ≥</span>
+              <input
+                className={`${rowInput} w-20 shrink-0`}
+                type="number"
+                min="1"
+                max="100"
+                value={row.percent}
+                onChange={e => update(idx, 'percent', e.target.value)}
+                placeholder="90"
+                aria-label="Warning percentage"
+              />
+              <span className="text-xs text-gray-500 dark:text-gray-400">%</span>
+              <button
+                type="button"
+                onClick={() => onChange(rows.filter((_, i) => i !== idx))}
+                title="Remove"
+                className="text-gray-400 hover:text-red-500 text-sm leading-none px-1"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <datalist id="storage-mounts">
+        {suggestions.map(m => <option key={m} value={m} />)}
+      </datalist>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => onChange([...rows, { mount: '', percent: '90' }])}
+          className="text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+        >
+          + Add mount point
+        </button>
+        {suggestions.map(m => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => onChange([...rows, { mount: m, percent: '90' }])}
+            title={`Add warning for ${m}`}
+            className="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+          >
+            + {m}
+          </button>
+        ))}
+      </div>
+    </Field>
+  )
+}
+
+export default function ItemFormModal({ item, token, servers = [], onSave, onSaveCopy, onClose }) {
   const isEdit = !!item
   const [form, setForm] = useState(isEdit ? itemToForm(item) : emptyForm())
   const [idTouched, setIdTouched] = useState(isEdit)
   const [errors, setErrors] = useState({})
   const [serverErrors, setServerErrors] = useState({})
   const [loading, setLoading] = useState(false)
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false)
+  const [knownMounts, setKnownMounts] = useState([])
+
+  // For existing SSH servers, look up the mount points the server reports (cached by the backend)
+  const isSshServerItem = isEdit && item.managementInfo?.type === 'ssh-server'
+  useEffect(() => {
+    if (!isSshServerItem || !token) return
+    let cancelled = false
+    fetch(`/api/items/${item.id}/details`, { headers: { Authorization: `Basic ${token}` } })
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => { if (data && !cancelled) setKnownMounts((data.storageList || []).map(s => s.mount)) })
+      .catch(() => { /* suggestions are optional */ })
+    return () => { cancelled = true }
+  }, [isSshServerItem, item?.id, token])
 
   // Auto-fill ID from name while the user hasn't manually edited it
   useEffect(() => {
@@ -348,13 +484,26 @@ export default function ItemFormModal({ item, servers = [], onSave, onSaveCopy, 
                     name="iconType"
                     value={value}
                     checked={form.iconType === value}
-                    onChange={() => set('iconType', value)}
+                    onChange={() => {
+                      set('iconType', value)
+                      // Nothing picked yet: open the picker right away so the user can choose one.
+                      if (value === 'emoji' && !form.iconEmoji) setEmojiPickerOpen(true)
+                    }}
                   />
                   {label}
                 </label>
               ))}
               {form.iconType === 'emoji' && form.iconEmoji && (
                 <span className="text-xl leading-none" title="Selected emoji">{form.iconEmoji}</span>
+              )}
+              {form.iconType === 'emoji' && (
+                <button
+                  type="button"
+                  onClick={() => setEmojiPickerOpen(o => !o)}
+                  className="text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  {emojiPickerOpen ? 'Hide emojis' : form.iconEmoji ? 'Change emoji' : 'Choose emoji'}
+                </button>
               )}
             </div>
             {form.iconType === 'favicon' ? (
@@ -370,8 +519,11 @@ export default function ItemFormModal({ item, servers = [], onSave, onSaveCopy, 
                   Invert in dark mode
                 </label>
               </div>
-            ) : (
-              <EmojiPicker value={form.iconEmoji} onChange={v => set('iconEmoji', v)} />
+            ) : emojiPickerOpen && (
+              <EmojiPicker
+                value={form.iconEmoji}
+                onChange={v => { set('iconEmoji', v); setEmojiPickerOpen(false) }}
+              />
             )}
           </Field>
 
@@ -482,6 +634,54 @@ export default function ItemFormModal({ item, servers = [], onSave, onSaveCopy, 
                       />
                       Allow server reboot
                     </label>
+
+                    <div className="border-t border-gray-200 dark:border-gray-700 pt-3 flex flex-col gap-3">
+                      <p className="text-xs font-medium text-gray-700 dark:text-gray-300">Monitoring</p>
+                      <div className="grid grid-cols-3 gap-3">
+                        <Field label="Check every (s)" error={errors.mgmtCheckInterval || serverErrors['management.check_interval']}>
+                          <input
+                            className={inputClass(errors.mgmtCheckInterval || serverErrors['management.check_interval'])}
+                            type="number"
+                            min="10"
+                            value={form.mgmtCheckInterval}
+                            onChange={e => set('mgmtCheckInterval', e.target.value)}
+                            placeholder="60"
+                          />
+                        </Field>
+                        <Field label="CPU warning ≥ %" error={errors.mgmtCpuWarning || serverErrors['management.cpu_warning']}>
+                          <input
+                            className={inputClass(errors.mgmtCpuWarning || serverErrors['management.cpu_warning'])}
+                            type="number"
+                            min="1"
+                            max="100"
+                            value={form.mgmtCpuWarning}
+                            onChange={e => set('mgmtCpuWarning', e.target.value)}
+                            placeholder="off"
+                          />
+                        </Field>
+                        <Field label="Memory warning ≥ %" error={errors.mgmtMemoryWarning || serverErrors['management.memory_warning']}>
+                          <input
+                            className={inputClass(errors.mgmtMemoryWarning || serverErrors['management.memory_warning'])}
+                            type="number"
+                            min="1"
+                            max="100"
+                            value={form.mgmtMemoryWarning}
+                            onChange={e => set('mgmtMemoryWarning', e.target.value)}
+                            placeholder="off"
+                          />
+                        </Field>
+                      </div>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 -mt-1">
+                        Leave a warning empty to disable it. The server is only checked in the background when at least one warning is set.
+                      </p>
+
+                    <StorageWarningsEditor
+                      rows={form.mgmtStorageWarnings}
+                      onChange={rows => set('mgmtStorageWarnings', rows)}
+                      knownMounts={knownMounts}
+                      error={errors.mgmtStorageWarnings || serverErrors['management.storage_warnings']}
+                    />
+                    </div>
                   </>
                 )}
 

@@ -1,6 +1,7 @@
 import StatusBadge from './StatusBadge'
 import ActionButton from './ActionButton'
 import DeleteButton from './DeleteButton'
+import WarningBadge, { WarningList } from './WarningBadge'
 
 const HEADER_BG = {
   project: 'bg-blue-100 dark:bg-blue-950',
@@ -12,7 +13,7 @@ export default function ItemCard({ item, icon, onAction, onEdit, onDelete, onDet
   const headerBg = HEADER_BG[item.category] ?? 'bg-gray-100'
 
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden flex flex-col hover:shadow-sm transition-shadow">
+    <div className={`bg-white dark:bg-gray-800 ${item.warnings?.length ? 'border-2 border-amber-500 dark:border-amber-400' : 'border border-gray-200 dark:border-gray-700'} rounded-lg overflow-hidden flex flex-col hover:shadow-sm transition-shadow`}>
       {/* Colored header */}
       <div className={`${headerBg} px-4 py-3 flex items-center justify-between gap-2`}>
         <span className="flex items-center gap-2 min-w-0">
@@ -21,8 +22,11 @@ export default function ItemCard({ item, icon, onAction, onEdit, onDelete, onDet
             : icon && <img src={icon} alt="" className={`w-5 h-5 shrink-0 rounded-sm object-contain ${item.iconInvertDark ? 'dark:invert' : ''}`} />}
           <span className="font-medium text-gray-900 dark:text-white text-sm truncate">{item.name}</span>
         </span>
-        <span className="sm:hidden"><StatusBadge status={item.status} compact /></span>
-        <span className="hidden sm:inline-flex"><StatusBadge status={item.status} /></span>
+        <span className="flex items-center gap-1.5 shrink-0">
+          <WarningBadge warnings={item.warnings} />
+          <span className="sm:hidden"><StatusBadge status={item.status} compact /></span>
+          <span className="hidden sm:inline-flex"><StatusBadge status={item.status} /></span>
+        </span>
       </div>
 
       {/* Mobile-only compact footer */}
@@ -47,6 +51,8 @@ export default function ItemCard({ item, icon, onAction, onEdit, onDelete, onDet
 
       {/* Desktop body */}
       <div className="hidden sm:flex px-4 py-3 flex-col gap-3 flex-1">
+        <WarningList warnings={item.warnings} />
+
         {/* Description */}
         {item.description && (
           <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">{item.description}</p>

@@ -8,6 +8,7 @@ const { authMiddleware } = require('./middleware/auth')
 const { twoFactorMiddleware } = require('./middleware/twoFactor')
 const { startHealthCheckScheduler, runAllChecks } = require('./healthcheck')
 const { loadConfig } = require('./config')
+const { startWarningScheduler } = require('./serverDetails')
 const authRouter = require('./routes/auth')
 const itemsRouter = require('./routes/items')
 const actionsRouter = require('./routes/actions')
@@ -110,6 +111,7 @@ app.post('/api/healthcheck/run', async (req, res) => {
 })
 
 startHealthCheckScheduler(CHECK_INTERVAL_SECONDS * 1000, REQUEST_TIMEOUT_MS)
+startWarningScheduler()
 
 app.listen(PORT, () => {
   console.log(`Dashboard backend listening on port ${PORT}`)

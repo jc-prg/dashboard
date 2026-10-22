@@ -38,6 +38,32 @@ function writeItems(items) {
 
 // ─── Validation ──────────────────────────────────────────────────────────────
 
+const MIN_CHECK_INTERVAL_S = 10
+const MAX_CHECK_INTERVAL_S = 86400
+
+function isIntInRange(value, min, max) {
+  const n = Number(value)
+  return value !== '' && Number.isInteger(n) && n >= min && n <= max
+}
+
+// storage_warnings: [{ mount: '/', percent: 90 }] — warn when usage of the mount reaches percent
+function validateStorageWarnings(list) {
+  if (list == null) return null
+  if (!Array.isArray(list)) return 'must be a list'
+  const seen = new Set()
+  for (const entry of list) {
+    const mount = typeof entry?.mount === 'string' ? entry.mount.trim() : ''
+    if (!mount || mount.length > 256) return 'each entry needs a mount point'
+    if (seen.has(mount)) return `mount point "${mount}" is listed twice`
+    seen.add(mount)
+    const percent = Number(entry.percent)
+    if (!Number.isInteger(percent) || percent < 1 || percent > 100) {
+      return `percentage for "${mount}" must be a whole number between 1 and 100`
+    }
+  }
+  return null
+}
+
 function validate(data) {
   const errors = {}
 
@@ -81,6 +107,16 @@ function validate(data) {
         errors['management.ssh_key'] = 'required'
       } else if (!String(mgmt.ssh_key).startsWith(SECRETS_PREFIX)) {
         errors['management.ssh_key'] = `must start with ${SECRETS_PREFIX}`
+      }
+      const swError = validateStorageWarnings(mgmt.storage_warnings)
+      if (swError) errors['management.storage_warnings'] = swError
+      for (const key of ['cpu_warning', 'memory_warning']) {
+        if (mgmt[key] != null && !isIntInRange(mgmt[key], 1, 100)) {
+          errors[`management.${key}`] = 'must be a whole number between 1 and 100'
+        }
+      }
+      if (mgmt.check_interval != null && !isIntInRange(mgmt.check_interval, MIN_CHECK_INTERVAL_S, MAX_CHECK_INTERVAL_S)) {
+        errors['management.check_interval'] = `must be between ${MIN_CHECK_INTERVAL_S} and ${MAX_CHECK_INTERVAL_S} seconds`
       }
     }
   }
@@ -131,6 +167,15 @@ function buildItem(data, id) {
       }
       if (mgmt.allow_reboot === false) {
         item.management.allow_reboot = false
+      }
+      if (mgmt.check_interval != null) item.management.check_interval = Number(mgmt.check_interval)
+      if (mgmt.cpu_warning != null) item.management.cpu_warning = Number(mgmt.cpu_warning)
+      if (mgmt.memory_warning != null) item.management.memory_warning = Number(mgmt.memory_warning)
+      if (mgmt.storage_warnings?.length) {
+        item.management.storage_warnings = mgmt.storage_warnings.map(w => ({
+          mount: w.mount.trim(),
+          percent: Number(w.percent),
+        }))
       }
     }
   }

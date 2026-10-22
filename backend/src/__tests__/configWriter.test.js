@@ -137,6 +137,45 @@ describe('validate', () => {
     const errors = validate({ name: 'Server', management: { type: 'ssh-server', host: 'h', user: 'u', ssh_key: `${SECRETS_PREFIX}mykey` } })
     expect(errors).toBeNull()
   })
+
+  describe('storage_warnings', () => {
+    const server = (storage_warnings) => ({
+      name: 'Server',
+      management: { type: 'ssh-server', host: 'h', user: 'u', ssh_key: `${SECRETS_PREFIX}k`, storage_warnings },
+    })
+
+    it('accepts valid thresholds', () => {
+      expect(validate(server([{ mount: '/', percent: 90 }, { mount: 'C:\\', percent: 80 }]))).toBeNull()
+    })
+
+    it('accepts an empty list', () => {
+      expect(validate(server([]))).toBeNull()
+    })
+
+    it('rejects a missing mount point', () => {
+      expect(validate(server([{ mount: ' ', percent: 90 }]))['management.storage_warnings']).toBeDefined()
+    })
+
+    it('rejects out-of-range or non-integer percentages', () => {
+      for (const percent of [0, 101, 50.5, 'abc', null]) {
+        expect(validate(server([{ mount: '/', percent }]))['management.storage_warnings']).toBeDefined()
+      }
+    })
+
+    it('validates cpu/memory thresholds and check interval', () => {
+      const base = { name: 'Server', management: { type: 'ssh-server', host: 'h', user: 'u', ssh_key: `${SECRETS_PREFIX}k` } }
+      const v = (extra) => validate({ ...base, management: { ...base.management, ...extra } })
+      expect(v({ cpu_warning: 80, memory_warning: 90, check_interval: 60 })).toBeNull()
+      expect(v({ cpu_warning: 0 })['management.cpu_warning']).toBeDefined()
+      expect(v({ memory_warning: 101 })['management.memory_warning']).toBeDefined()
+      expect(v({ check_interval: 5 })['management.check_interval']).toBeDefined()
+      expect(v({ check_interval: 'abc' })['management.check_interval']).toBeDefined()
+    })
+
+    it('rejects duplicate mount points', () => {
+      expect(validate(server([{ mount: '/', percent: 90 }, { mount: '/', percent: 80 }]))['management.storage_warnings']).toBeDefined()
+    })
+  })
 })
 
 // ─── addItem ──────────────────────────────────────────────────────────────────
@@ -190,6 +229,27 @@ describe('addItem', () => {
     })()
     expect(err.statusCode).toBe(400)
     expect(err.fields['management.server_id']).toBeDefined()
+  })
+})
+
+describe('addItem storage_warnings', () => {
+  it('stores trimmed thresholds as numbers', () => {
+    addItem({
+      name: 'Server',
+      management: {
+        type: 'ssh-server', host: 'h', user: 'u', ssh_key: `${SECRETS_PREFIX}k`,
+        storage_warnings: [{ mount: ' /data ', percent: '85' }],
+      },
+    })
+    expect(getWrittenItems()[0].management.storage_warnings).toEqual([{ mount: '/data', percent: 85 }])
+  })
+
+  it('omits storage_warnings when the list is empty', () => {
+    addItem({
+      name: 'Server',
+      management: { type: 'ssh-server', host: 'h', user: 'u', ssh_key: `${SECRETS_PREFIX}k`, storage_warnings: [] },
+    })
+    expect(getWrittenItems()[0].management.storage_warnings).toBeUndefined()
   })
 })
 

@@ -183,6 +183,7 @@ export default function Dashboard({ token, onLogout, onTwoFactorRequired, isDark
       {modal !== null && (
         <ItemFormModal
           item={modal.item}
+          token={token}
           servers={items.filter(i => i.category === 'server')}
           onSave={handleSave}
           onSaveCopy={createItem}

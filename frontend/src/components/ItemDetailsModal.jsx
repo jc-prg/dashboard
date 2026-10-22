@@ -1,5 +1,6 @@
 import StatusBadge from './StatusBadge'
 import ActionButton from './ActionButton'
+import { WarningList } from './WarningBadge'
 
 function Row({ label, value }) {
   if (!value && value !== 0) return null
@@ -36,6 +37,7 @@ export default function ItemDetailsModal({ item, onAction, onEdit, onClose }) {
 
         {/* Body */}
         <div className="px-4 py-2 overflow-y-auto flex-1">
+          <WarningList warnings={item.warnings} className="py-2" />
           <Row label="Category" value={CATEGORY_LABELS[item.category] ?? item.category} />
           {item.description && <Row label="Description" value={item.description} />}
           {item.url && (
@@ -76,6 +78,15 @@ export default function ItemDetailsModal({ item, onAction, onEdit, onClose }) {
                   <Row label="Port" value={mgmt.port !== 22 ? mgmt.port : null} />
                   <Row label="User" value={mgmt.user} />
                   <Row label="OS" value={mgmt.os} />
+                  <Row label="Check interval" value={mgmt.checkInterval ? `${mgmt.checkInterval}s` : null} />
+                  <Row label="CPU warning" value={mgmt.cpuWarning ? `≥ ${mgmt.cpuWarning}%` : null} />
+                  <Row label="Memory warning" value={mgmt.memoryWarning ? `≥ ${mgmt.memoryWarning}%` : null} />
+                  {mgmt.storageWarnings?.length > 0 && (
+                    <Row
+                      label="Storage warnings"
+                      value={mgmt.storageWarnings.map(w => `${w.mount} ≥ ${w.percent}%`).join(', ')}
+                    />
+                  )}
                 </>
               )}
               {mgmt.type === 'ssh-compose' && (

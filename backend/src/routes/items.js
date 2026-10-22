@@ -5,7 +5,7 @@ const { loadConfig, MANAGEMENT_ACTIONS } = require('../config')
 const { getStatus, checkAndCacheItem } = require('../healthcheck')
 const { addItem, updateItem, deleteItem, readItems, importConfig } = require('../configWriter')
 const { append } = require('../auditLog')
-const { fetchServerDetails } = require('../serverDetails')
+const { fetchServerDetails, getWarnings, needsWarningPoll, refreshDetails, DEFAULT_CHECK_INTERVAL_S } = require('../serverDetails')
 const { getIcon, pruneIcons } = require('../icons')
 
 const SECRETS_PREFIX = '/app/config/secrets/'
@@ -37,6 +37,10 @@ function managementInfo(mgmt) {
     sshKey: mgmt.ssh_key ? mgmt.ssh_key.replace(SECRETS_PREFIX, '') : '',
     os: mgmt.os || 'linux',
     allowReboot: mgmt.allow_reboot !== false,
+    checkInterval: mgmt.check_interval || DEFAULT_CHECK_INTERVAL_S,
+    cpuWarning: mgmt.cpu_warning ?? null,
+    memoryWarning: mgmt.memory_warning ?? null,
+    storageWarnings: (mgmt.storage_warnings || []).map(w => ({ mount: w.mount, percent: w.percent })),
   }
 }
 
@@ -65,6 +69,7 @@ function toResponse(item) {
     statusCode: s.statusCode,
     latencyMs: s.latencyMs,
     checkedAt: s.checkedAt,
+    warnings: getWarnings(item),
   }
 }
 
@@ -166,7 +171,7 @@ router.get('/:id/details', async (req, res) => {
       return res.status(400).json({ error: 'Details are only available for ssh-server items' })
     }
     const details = await fetchServerDetails(item)
-    res.json(details)
+    res.json({ ...details, warnings: getWarnings(item) })
   } catch (err) {
     res.status(500).json({ error: sanitizeError(err.message) })
   }
@@ -176,7 +181,9 @@ router.get('/:id/details', async (req, res) => {
 
 router.post('/', (req, res) => {
   try {
-    const item = enrichRaw(addItem(req.body))
+    const raw = addItem(req.body)
+    if (needsWarningPoll(raw)) refreshDetails(raw)
+    const item = enrichRaw(raw)
     append({ type: 'create', itemId: item.id, itemName: item.name, success: true })
     res.status(201).json(item)
   } catch (err) {
@@ -187,7 +194,9 @@ router.post('/', (req, res) => {
 
 router.put('/:id', (req, res) => {
   try {
-    const item = enrichRaw(updateItem(req.params.id, req.body))
+    const raw = updateItem(req.params.id, req.body)
+    if (needsWarningPoll(raw)) refreshDetails(raw)
+    const item = enrichRaw(raw)
     append({ type: 'update', itemId: item.id, itemName: item.name, success: true })
     res.json(item)
   } catch (err) {

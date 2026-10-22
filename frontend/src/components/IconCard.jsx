@@ -1,5 +1,6 @@
 import StatusBadge from './StatusBadge'
 import ActionButton from './ActionButton'
+import WarningBadge from './WarningBadge'
 
 // Tile background: subtle category tint — near white in light mode, near black in dark mode
 // (950 at half opacity blends with the gray-900 page background)
@@ -45,6 +46,9 @@ function BigIcon({ item, icon }) {
   )
 }
 
+// Same amber as the warning icon
+const WARNING_BORDER = 'border-2 border-amber-500 dark:border-amber-400'
+
 const BUTTON_CLASS = 'border border-gray-300 dark:border-gray-600 rounded p-1 text-gray-500 dark:text-gray-400 hover:border-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center justify-center'
 
 const ICON_LINK_CLASS = 'h-16 mb-2 flex items-center justify-center'
@@ -54,7 +58,12 @@ export default function IconCard({ item, icon, onAction, onEdit, onDetails, onIt
   const hasServerDetails = item.managementInfo?.type === 'ssh-server'
 
   return (
-    <div className={`relative ${TILE_BG[item.category] ?? 'bg-gray-50 dark:bg-gray-950/50'} border border-gray-200 dark:border-gray-700 rounded-lg p-3 pt-4 flex flex-col items-center gap-2 hover:shadow-sm transition-shadow`}>
+    <div className={`relative ${TILE_BG[item.category] ?? 'bg-gray-50 dark:bg-gray-950/50'} ${item.warnings?.length ? WARNING_BORDER : 'border border-gray-200 dark:border-gray-700'} rounded-lg p-3 pt-4 flex flex-col items-center gap-2 hover:shadow-sm transition-shadow`}>
+      {/* Active warnings (e.g. low storage) in the opposite corner */}
+      {item.warnings?.length > 0 && (
+        <span className="absolute top-2 left-2"><WarningBadge warnings={item.warnings} /></span>
+      )}
+
       {/* Online status in the corner */}
       <span className="absolute top-2 right-2" title={STATUS_LABEL[item.status] ?? item.status}>
         <StatusBadge status={item.status} compact />

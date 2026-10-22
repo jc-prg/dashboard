@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
+import WarningBadge, { WarningList } from './WarningBadge'
 
-const REFRESH_INTERVAL_MS = 5 * 60 * 1000
+const DEFAULT_CHECK_INTERVAL_S = 60
 
-function Row({ label, value }) {
+function Row({ label, value, warn, title }) {
   return (
-    <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0">
+    <div title={title} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0">
       <span className="text-xs text-gray-500 dark:text-gray-400">{label}</span>
-      <span className="text-xs font-medium text-gray-900 dark:text-white">
+      <span className={`text-xs font-medium ${warn ? 'text-amber-600 dark:text-amber-400' : 'text-gray-900 dark:text-white'}`}>
         {value ?? <span className="text-gray-400 dark:text-gray-600">—</span>}
       </span>
     </div>
@@ -18,6 +19,13 @@ export default function ServerDetailsModal({ item, token, onClose }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [lastFetched, setLastFetched] = useState(null)
+  const mgmt = item.managementInfo
+  const thresholds = mgmt?.storageWarnings ?? []
+  const refreshMs = (mgmt?.checkInterval || DEFAULT_CHECK_INTERVAL_S) * 1000
+  const warningOf = (type) => data?.warnings?.find(w => w.type === type)
+  const withBadge = (warning, text) => text == null ? null : (
+    <span className="inline-flex items-center gap-1">{warning && <WarningBadge warnings={[warning]} size={12} />}{text}</span>
+  )
 
   const fetchDetails = useCallback(async () => {
     setLoading(true)
@@ -42,9 +50,9 @@ export default function ServerDetailsModal({ item, token, onClose }) {
 
   useEffect(() => {
     fetchDetails()
-    const id = setInterval(fetchDetails, REFRESH_INTERVAL_MS)
+    const id = setInterval(fetchDetails, refreshMs)
     return () => clearInterval(id)
-  }, [fetchDetails])
+  }, [fetchDetails, refreshMs])
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60 p-4">
@@ -73,17 +81,34 @@ export default function ServerDetailsModal({ item, token, onClose }) {
           )}
           {data && (
             <div>
+              <WarningList warnings={data.warnings} className="pb-2" />
               {data.distro && <Row label="OS" value={data.distro} />}
+              {data.kernel && <Row label="Kernel" value={data.kernel} />}
               {data.storageList?.map(({ mount, value }) => {
-                const [pct, used] = value.split('|')
-                return <Row key={mount} label={`Storage usage ${mount}`} value={`${pct} (${used})`} />
+                const [pct, used, total] = value.split('|')
+                const threshold = thresholds.find(t => t.mount === mount)
+                const warning = data.warnings?.find(w => w.type === 'storage' && w.mount === mount)
+                return (
+                  <Row
+                    key={mount}
+                    label={`Storage usage ${mount}${threshold ? ` (warn ≥ ${threshold.percent}%)` : ''}`}
+                    value={<span className="inline-flex items-center gap-1">{warning && <WarningBadge warnings={[warning]} size={12} />}{`${pct} (${used})`}</span>}
+                    warn={!!warning}
+                    title={total ? `${used} / ${total} used` : undefined}
+                  />
+                )
               })}
-              <Row label="CPU usage" value={data.cpuUsage} />
               <Row
-                label="Memory usage"
+                label={`CPU usage${mgmt?.cpuWarning ? ` (warn ≥ ${mgmt.cpuWarning}%)` : ''}`}
+                value={withBadge(warningOf('cpu'), data.cpuUsage)}
+                warn={!!warningOf('cpu')}
+              />
+              <Row
+                label={`Memory usage${mgmt?.memoryWarning ? ` (warn ≥ ${mgmt.memoryWarning}%)` : ''}`}
                 value={data.memUsed && data.memTotal
-                  ? `${Math.round(parseInt(data.memUsed) / parseInt(data.memTotal) * 100)}% (${data.memUsed})`
+                  ? withBadge(warningOf('memory'), `${Math.round(parseInt(data.memUsed) / parseInt(data.memTotal) * 100)}% (${data.memUsed})`)
                   : null}
+                warn={!!warningOf('memory')}
               />
               <Row label="Started" value={data.startedAt} />
             </div>
