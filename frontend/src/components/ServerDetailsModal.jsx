@@ -31,7 +31,7 @@ export default function ServerDetailsModal({ item, token, onClose }) {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/items/${item.id}/details`, {
+      const res = await fetch(`api/items/${item.id}/details`, {
         headers: { Authorization: `Basic ${token}` },
       })
       if (!res.ok) {

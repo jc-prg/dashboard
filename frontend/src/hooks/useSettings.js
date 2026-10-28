@@ -9,7 +9,7 @@ export function useSettings(token) {
 
   useEffect(() => {
     let cancelled = false
-    fetch('/api/settings', { headers: { Authorization: `Basic ${token}` }, cache: 'no-cache' })
+    fetch('api/settings', { headers: { Authorization: `Basic ${token}` }, cache: 'no-cache' })
       .then(res => (res.ok ? res.json() : null))
       .then(data => { if (data && !cancelled) setSettings({ ...DEFAULTS, ...data }) })
       .catch(() => { /* keep defaults */ })
@@ -22,7 +22,7 @@ export function useSettings(token) {
     let previous
     setSettings(s => { previous = s; return { ...s, ...patch } })
     try {
-      const res = await fetch('/api/settings', {
+      const res = await fetch('api/settings', {
         method: 'PUT',
         headers: { Authorization: `Basic ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(patch),

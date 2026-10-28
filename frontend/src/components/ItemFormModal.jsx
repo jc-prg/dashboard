@@ -312,7 +312,7 @@ export default function ItemFormModal({ item, token, servers = [], onSave, onSav
   useEffect(() => {
     if (!isSshServerItem || !token) return
     let cancelled = false
-    fetch(`/api/items/${item.id}/details`, { headers: { Authorization: `Basic ${token}` } })
+    fetch(`api/items/${item.id}/details`, { headers: { Authorization: `Basic ${token}` } })
       .then(res => (res.ok ? res.json() : null))
       .then(data => { if (data && !cancelled) setKnownMounts((data.storageList || []).map(s => s.mount)) })
       .catch(() => { /* suggestions are optional */ })

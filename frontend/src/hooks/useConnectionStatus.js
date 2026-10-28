@@ -11,7 +11,7 @@ export function useConnectionStatus(token) {
 
     async function check() {
       try {
-        const res = await fetch('/api/auth/check', {
+        const res = await fetch('api/auth/check', {
           headers: { Authorization: `Basic ${token}` },
         })
         if (!cancelled) setIsOnline(res.ok || res.status === 401)

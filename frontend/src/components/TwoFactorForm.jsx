@@ -11,7 +11,7 @@ export default function TwoFactorForm({ token, onVerified }) {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/auth/2fa/send', {
+      const res = await fetch('api/auth/2fa/send', {
         method: 'POST',
         headers: { Authorization: `Basic ${token}` },
       })
@@ -32,7 +32,7 @@ export default function TwoFactorForm({ token, onVerified }) {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/auth/2fa/verify', {
+      const res = await fetch('api/auth/2fa/verify', {
         method: 'POST',
         headers: { Authorization: `Basic ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ challengeId, code }),

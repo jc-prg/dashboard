@@ -4,14 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>jc://dashboard/</title>
-    <link rel="icon" type="image/png" href="/icon.png" />
-    <link rel="apple-touch-icon" href="/icon.png" />
-    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/png" href="icon.png" />
+    <link rel="apple-touch-icon" href="icon.png" />
+    <link rel="manifest" href="manifest.json" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Dashboard" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#1f2937" media="(prefers-color-scheme: dark)" />
+    <script>
+      // All URLs are relative so the app works under a path prefix (e.g. /folder/).
+      // Without a trailing slash (/folder) they would resolve against the parent, so add it.
+      if (!/\/$|\.html$/.test(location.pathname)) {
+        location.replace(location.pathname + '/' + location.search + location.hash)
+      }
+    </script>
     <script>
       // Apply the stored theme before first paint so body/status bar colors don't flash
       try {

@@ -14,7 +14,7 @@ export function useAuth() {
       setChecking(false)
       return
     }
-    fetch('/api/auth/check', { headers: { Authorization: `Basic ${stored}` } })
+    fetch('api/auth/check', { headers: { Authorization: `Basic ${stored}` } })
       .then(async (res) => {
         // Only a rejected password invalidates the stored token; keep it on
         // transient errors (rate limit, backend restart) so a reload doesn't log out
@@ -36,7 +36,7 @@ export function useAuth() {
     sessionStorage.setItem(STORAGE_KEY, newToken)
     setToken(newToken)
     try {
-      const res = await fetch('/api/auth/check', { headers: { Authorization: `Basic ${newToken}` } })
+      const res = await fetch('api/auth/check', { headers: { Authorization: `Basic ${newToken}` } })
       const data = await res.json()
       if (data.twoFactorRequired) {
         setTwoFactorRequired(true)

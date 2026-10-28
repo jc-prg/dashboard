@@ -63,7 +63,7 @@ export default function AuditLogModal({ token, onClose }) {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    fetch('/api/audit-log', { headers: { Authorization: `Basic ${token}` } })
+    fetch('api/audit-log', { headers: { Authorization: `Basic ${token}` } })
       .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
       .then(setEntries)
       .catch(err => setError(err.message))

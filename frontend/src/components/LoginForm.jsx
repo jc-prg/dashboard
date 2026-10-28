@@ -12,7 +12,7 @@ export default function LoginForm({ onLogin }) {
     setError('')
     const token = btoa(`user:${password}`)
     try {
-      const res = await fetch('/api/auth/check', {
+      const res = await fetch('api/auth/check', {
         headers: { Authorization: `Basic ${token}` },
       })
       if (res.ok) {

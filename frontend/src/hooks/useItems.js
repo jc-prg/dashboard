@@ -22,7 +22,7 @@ export function useItems(token, onUnauthorized, isOnline = true, onTwoFactorRequ
   const fetchItems = useCallback(async () => {
     if (!isOnline) return
     try {
-      const res = await fetch('/api/items', { headers: authHeader })
+      const res = await fetch('api/items', { headers: authHeader })
       if (res.status === 401) { onUnauthorized?.(); return }
       if (res.status === 403) { onTwoFactorRequired?.(); return }
       if (!res.ok) throw new Error(`Server error ${res.status}`)
@@ -39,7 +39,7 @@ export function useItems(token, onUnauthorized, isOnline = true, onTwoFactorRequ
   const liveCheckItem = useCallback(async (id) => {
     if (!isOnline) return
     try {
-      const res = await fetch(`/api/items/${id}/check`, { method: 'POST', headers: authHeader })
+      const res = await fetch(`api/items/${id}/check`, { method: 'POST', headers: authHeader })
       if (res.status === 401) { onUnauthorized?.(); return }
       if (res.status === 403) { onTwoFactorRequired?.(); return }
       if (!res.ok) return
@@ -54,7 +54,7 @@ export function useItems(token, onUnauthorized, isOnline = true, onTwoFactorRequ
   const refresh = useCallback(async () => {
     if (!isOnline) return
     try {
-      const res = await fetch('/api/items', { headers: authHeader })
+      const res = await fetch('api/items', { headers: authHeader })
       if (res.status === 401) { onUnauthorized?.(); return }
       if (res.status === 403) { onTwoFactorRequired?.(); return }
       if (!res.ok) return
@@ -111,7 +111,7 @@ export function useItems(token, onUnauthorized, isOnline = true, onTwoFactorRequ
   useEffect(() => {
     if (!isOnline || !iconKey) return
     let cancelled = false
-    fetch('/api/items/icons', { headers: authHeader, cache: 'no-cache' })
+    fetch('api/items/icons', { headers: authHeader, cache: 'no-cache' })
       .then(res => (res.ok ? res.json() : null))
       .then(data => { if (data && !cancelled) setIcons(data) })
       .catch(() => { /* icons are optional */ })
@@ -123,7 +123,7 @@ export function useItems(token, onUnauthorized, isOnline = true, onTwoFactorRequ
   // The backend runs actions as background jobs (start/stop can take minutes):
   // the POST returns 202 with a jobId, then we poll until the job has finished.
   async function triggerAction(id, action) {
-    const res = await fetch(`/api/items/${id}/action/${action}`, {
+    const res = await fetch(`api/items/${id}/action/${action}`, {
       method: 'POST',
       headers: authHeader,
     })
@@ -137,7 +137,7 @@ export function useItems(token, onUnauthorized, isOnline = true, onTwoFactorRequ
     while (data.status === 'running') {
       await new Promise(resolve => setTimeout(resolve, ACTION_POLL_INTERVAL_MS))
       try {
-        const pollRes = await fetch(`/api/items/${id}/action-jobs/${data.jobId}`, { headers: authHeader })
+        const pollRes = await fetch(`api/items/${id}/action-jobs/${data.jobId}`, { headers: authHeader })
         if (pollRes.status === 401) { onUnauthorized?.(); throw new Error('Unauthorized') }
         if (pollRes.status === 403) { onTwoFactorRequired?.(); throw new Error('2FA required') }
         if (pollRes.status === 404) throw new Error('Action status lost (backend restarted?)')
@@ -175,28 +175,28 @@ export function useItems(token, onUnauthorized, isOnline = true, onTwoFactorRequ
   }
 
   async function createItem(body) {
-    const item = await apiWrite('/api/items', 'POST', body)
+    const item = await apiWrite('api/items', 'POST', body)
     await fetchItems()
     schedulePostSaveCheck(item.id)
     return item
   }
 
   async function updateItem(id, body) {
-    const item = await apiWrite(`/api/items/${id}`, 'PUT', body)
+    const item = await apiWrite(`api/items/${id}`, 'PUT', body)
     await fetchItems()
     schedulePostSaveCheck(item.id ?? id)
     return item
   }
 
   async function deleteItem(id) {
-    await apiWrite(`/api/items/${id}`, 'DELETE')
+    await apiWrite(`api/items/${id}`, 'DELETE')
     await fetchItems()
   }
 
   // ─── Export / Import ─────────────────────────────────────────────────────
 
   async function exportConfig() {
-    const res = await fetch('/api/items/export', { headers: authHeader })
+    const res = await fetch('api/items/export', { headers: authHeader })
     if (res.status === 401) { onUnauthorized?.(); throw new Error('Unauthorized') }
     if (res.status === 403) { onTwoFactorRequired?.(); throw new Error('2FA required') }
     if (!res.ok) throw new Error(`Export failed: HTTP ${res.status}`)
@@ -211,7 +211,7 @@ export function useItems(token, onUnauthorized, isOnline = true, onTwoFactorRequ
   }
 
   async function importConfig(jsonData) {
-    const res = await fetch('/api/items/import', {
+    const res = await fetch('api/items/import', {
       method: 'POST',
       headers: { ...authHeader, 'Content-Type': 'application/json', 'X-Confirm': 'import' },
       body: JSON.stringify(jsonData),

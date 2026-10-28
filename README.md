@@ -68,9 +68,9 @@ items:
 
 ### Management types
 
-| Type | Action | SSH command |
-|------|--------|-------------|
-| `ssh-server` | Reboot | `sudo reboot` |
+| Type          | Action  | SSH command                        |
+|---------------|---------|------------------------------------|
+| `ssh-server`  | Reboot  | `sudo reboot`                      |
 | `ssh-compose` | Restart | `docker compose restart [service]` |
 
 Items without a `management` block show no action buttons.
@@ -95,6 +95,24 @@ For server reboot to work, the SSH user needs passwordless sudo for reboot:
 # /etc/sudoers.d/dashboard on the target host
 pi ALL=(ALL) NOPASSWD: /sbin/reboot
 ```
+
+### Running under a subpath / behind a reverse proxy
+
+The frontend uses only relative URLs, so it works at the domain root or under any path prefix
+(e.g. `https://subdomain.domain.de/folder/`) without rebuilding. The proxy may either strip the
+prefix or pass it through — the bundled nginx handles both. Example (nginx):
+
+```nginx
+location = /folder { return 301 /folder/; }
+location /folder/ {
+    proxy_pass http://dashboard-host:80/;   # trailing slash strips /folder
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+
+If the proxy doesn't redirect `/folder` to `/folder/`, the page adds the trailing slash itself.
 
 ## Architecture
 
@@ -142,15 +160,15 @@ After frontend changes: `docker compose restart frontend`
 
 All endpoints require `Authorization: Basic <token>`.
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/auth/check` | Validate credentials |
-| `GET` | `/api/items` | List all items with status |
-| `POST` | `/api/items` | Create item |
-| `PUT` | `/api/items/:id` | Update item |
-| `DELETE` | `/api/items/:id` | Delete item |
-| `GET` | `/api/items/:id/status` | Poll single item status |
-| `POST` | `/api/items/:id/action/:action` | Trigger SSH action |
+| Method   | Path                            | Description                |
+|----------|---------------------------------|----------------------------|
+| `GET`    | `/api/auth/check`               | Validate credentials       |
+| `GET`    | `/api/items`                    | List all items with status |
+| `POST`   | `/api/items`                    | Create item                |
+| `PUT`    | `/api/items/:id`                | Update item                |
+| `DELETE` | `/api/items/:id`                | Delete item                |
+| `GET`    | `/api/items/:id/status`         | Poll single item status    |
+| `POST`   | `/api/items/:id/action/:action` | Trigger SSH action         |
 
 ## Security notes
 
