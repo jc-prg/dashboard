@@ -99,3 +99,39 @@ describe('isDue', () => {
     expect(isDue(slow, now + 61_000)).toBe(false)
   })
 })
+
+describe('fetchComposeStorage', () => {
+  const { fetchComposeStorage } = require('../serverDetails')
+  const srv = { id: 'srv', management: { type: 'ssh-server', host: 'h', port: 2222, user: 'u', ssh_key: 'k' } }
+  const app = (id, compose_dir = '/opt/app') => ({ id, management: { type: 'ssh-compose', server_id: 'srv', compose_dir } })
+
+  beforeEach(() => runSshCommand.mockReset())
+
+  it('runs du on the compose dir with the server credentials', async () => {
+    runSshCommand.mockResolvedValue({ stdout: '1.5G\n', stderr: '', code: 0 })
+    const result = await fetchComposeStorage(app('cs1'), [srv])
+    expect(result.usedStorage).toBe('1.5G')
+    expect(runSshCommand).toHaveBeenCalledWith(expect.objectContaining({
+      host: 'h', port: 2222, user: 'u', keyPath: 'k',
+      command: expect.stringContaining("du -sh -- '/opt/app'"),
+    }))
+  })
+
+  it('caches results until the compose dir changes', async () => {
+    runSshCommand.mockResolvedValue({ stdout: '10M', stderr: '', code: 0 })
+    await fetchComposeStorage(app('cs2'), [srv])
+    await fetchComposeStorage(app('cs2'), [srv])
+    expect(runSshCommand).toHaveBeenCalledTimes(1)
+    await fetchComposeStorage(app('cs2', '/opt/other'), [srv])
+    expect(runSshCommand).toHaveBeenCalledTimes(2)
+  })
+
+  it('throws when the referenced server is missing', async () => {
+    await expect(fetchComposeStorage(app('cs3'), [])).rejects.toThrow('not found')
+  })
+
+  it('throws when du prints nothing', async () => {
+    runSshCommand.mockResolvedValue({ stdout: '', stderr: '', code: 1 })
+    await expect(fetchComposeStorage(app('cs4'), [srv])).rejects.toThrow('Could not determine')
+  })
+})

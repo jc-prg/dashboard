@@ -196,7 +196,7 @@ export default function Dashboard({ token, onLogout, onTwoFactorRequired, isDark
       )}
 
       {itemDetailsItem && (
-        <ItemDetailsModal item={itemDetailsItem} onAction={triggerAction} onEdit={openEdit} onClose={() => setItemDetailsItem(null)} />
+        <ItemDetailsModal item={itemDetailsItem} token={token} onAction={triggerAction} onEdit={openEdit} onClose={() => setItemDetailsItem(null)} />
       )}
 
       {showCompose && (

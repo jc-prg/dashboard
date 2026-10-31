@@ -101,6 +101,48 @@ async function fetchServerDetails(item, { force = false } = {}) {
   return data
 }
 
+// ─── Compose dir storage ─────────────────────────────────────────────────────
+
+const COMPOSE_STORAGE_TTL_MS = 5 * 60 * 1000
+
+// Cache: { [itemId]: { usedStorage, composeDir, fetchedAt } }
+const composeStorageCache = {}
+
+// Disk usage of an ssh-compose item's compose_dir, measured with `du` over the referenced
+// server's SSH credentials. du can be slow on big directories, so results are cached.
+async function fetchComposeStorage(item, allItems, { force = false } = {}) {
+  const mgmt = item.management
+  const cached = composeStorageCache[item.id]
+  if (!force && cached && cached.composeDir === mgmt.compose_dir &&
+      Date.now() - new Date(cached.fetchedAt).getTime() < COMPOSE_STORAGE_TTL_MS) {
+    return cached
+  }
+
+  const server = allItems.find(i => i.id === mgmt.server_id)
+  if (server?.management?.type !== 'ssh-server') {
+    throw new Error(`Referenced server "${mgmt.server_id}" not found or has no management configured`)
+  }
+
+  // compose_dir is validated to [A-Za-z0-9/._-]; unreadable subdirs (e.g. root-owned volumes)
+  // make du exit non-zero but it still prints the total for what it could read
+  const sshResult = await runSshCommand({
+    host: server.management.host,
+    port: server.management.port || 22,
+    user: server.management.user,
+    keyPath: server.management.ssh_key,
+    command: `du -sh -- '${mgmt.compose_dir}' 2>/dev/null | tail -n 1 | cut -f1`,
+    timeoutMs: 15000,
+    commandTimeoutMs: 60000,
+  })
+
+  const usedStorage = sshResult.stdout.trim()
+  if (!usedStorage) throw new Error('Could not determine storage usage')
+
+  const data = { usedStorage, composeDir: mgmt.compose_dir, fetchedAt: new Date().toISOString() }
+  composeStorageCache[item.id] = data
+  return data
+}
+
 // ─── Warnings ────────────────────────────────────────────────────────────────
 
 function memoryPercent(details) {
@@ -216,6 +258,7 @@ function startWarningScheduler() {
 
 module.exports = {
   fetchServerDetails,
+  fetchComposeStorage,
   computeWarnings,
   getWarnings,
   needsWarningPoll,

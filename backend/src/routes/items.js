@@ -5,7 +5,7 @@ const { loadConfig, MANAGEMENT_ACTIONS } = require('../config')
 const { getStatus, checkAndCacheItem } = require('../healthcheck')
 const { addItem, updateItem, deleteItem, readItems, importConfig } = require('../configWriter')
 const { append } = require('../auditLog')
-const { fetchServerDetails, getWarnings, needsWarningPoll, refreshDetails, DEFAULT_CHECK_INTERVAL_S } = require('../serverDetails')
+const { fetchServerDetails, fetchComposeStorage, getWarnings, needsWarningPoll, refreshDetails, DEFAULT_CHECK_INTERVAL_S } = require('../serverDetails')
 const { getIcon, pruneIcons } = require('../icons')
 
 const SECRETS_PREFIX = '/app/config/secrets/'
@@ -172,6 +172,22 @@ router.get('/:id/details', async (req, res) => {
     }
     const details = await fetchServerDetails(item)
     res.json({ ...details, warnings: getWarnings(item) })
+  } catch (err) {
+    res.status(500).json({ error: sanitizeError(err.message) })
+  }
+})
+
+// Used storage of an ssh-compose item's compose directory
+router.get('/:id/storage', async (req, res) => {
+  try {
+    const items = loadConfig()
+    const item = items.find(i => i.id === req.params.id)
+    if (!item) return res.status(404).json({ error: 'Item not found' })
+    if (item.management?.type !== 'ssh-compose' || !item.management.compose_dir) {
+      return res.status(400).json({ error: 'Storage is only available for ssh-compose items with a compose dir' })
+    }
+    const { usedStorage, fetchedAt } = await fetchComposeStorage(item, items)
+    res.json({ usedStorage, fetchedAt })
   } catch (err) {
     res.status(500).json({ error: sanitizeError(err.message) })
   }

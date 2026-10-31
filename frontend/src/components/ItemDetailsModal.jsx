@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import StatusBadge from './StatusBadge'
 import ActionButton from './ActionButton'
 import { WarningList } from './WarningBadge'
@@ -15,8 +16,35 @@ function Row({ label, value }) {
 const CATEGORY_LABELS = { project: 'Project', server: 'Server', tool: 'Tool' }
 const MGMT_TYPE_LABELS = { 'ssh-server': 'SSH Server', 'ssh-compose': 'SSH Compose' }
 
-export default function ItemDetailsModal({ item, onAction, onEdit, onClose }) {
+// Used storage of the compose dir, measured on the server (du). null while loading.
+function useComposeStorage(item, token) {
+  const [storage, setStorage] = useState(null)
   const mgmt = item.managementInfo
+  const enabled = mgmt?.type === 'ssh-compose' && !!mgmt.composeDir
+
+  useEffect(() => {
+    if (!enabled) return
+    let cancelled = false
+    setStorage(null)
+    fetch(`api/items/${item.id}/storage`, { headers: { Authorization: `Basic ${token}` } })
+      .then(async (res) => {
+        const body = await res.json().catch(() => ({}))
+        if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`)
+        return body.usedStorage
+      })
+      .then((value) => { if (!cancelled) setStorage({ value }) })
+      .catch((err) => { if (!cancelled) setStorage({ error: err.message }) })
+    return () => { cancelled = true }
+  }, [enabled, item.id, mgmt?.composeDir, token])
+
+  if (!enabled) return null
+  if (!storage) return 'Loading…'
+  return storage.value ?? 'Unavailable'
+}
+
+export default function ItemDetailsModal({ item, token, onAction, onEdit, onClose }) {
+  const mgmt = item.managementInfo
+  const usedStorage = useComposeStorage(item, token)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60 p-4">
@@ -93,6 +121,7 @@ export default function ItemDetailsModal({ item, onAction, onEdit, onClose }) {
                 <>
                   <Row label="Server ID" value={mgmt.serverId} />
                   <Row label="Compose dir" value={mgmt.composeDir} />
+                  <Row label="Used storage" value={usedStorage} />
                   {mgmt.composeFile && <Row label="Compose file" value={mgmt.composeFile} />}
                   {mgmt.composeService && <Row label="Service" value={mgmt.composeService} />}
                 </>
